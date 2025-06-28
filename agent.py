@@ -15,7 +15,7 @@ class GraphState(TypedDict):
     log: List[str]
     status_message: str
 
-# 2. Définition des nœuds (inchangés, sauf un ajout)
+# 2. Définition des nœuds (messages de statut améliorés)
 def node_extract_id(state: GraphState) -> dict:
     print("---NŒUD: EXTRACTION DE L'ID---")
     current_log = state.get("log", [])
@@ -28,14 +28,15 @@ def node_extract_id(state: GraphState) -> dict:
         return {
             "error_message": error_message,
             "log": current_log + [f"❌ {error_message}"],
-            "status_message": "❌ Échec de l'extraction."
+            "status_message": "❌ Échec de l'extraction de l'ID."
         }
     
     success_message = f"✅ ID de la vidéo trouvé : {video_id}"
     return {
         "video_id": video_id,
         "log": current_log + [success_message],
-        "status_message": "📝 Récupération de la transcription..."
+        # Message pour la prochaine étape
+        "status_message": "📝 Utilisation de `get_transcript_tool` pour récupérer la transcription..."
     }
 
 def node_get_transcript(state: GraphState) -> dict:
@@ -49,14 +50,15 @@ def node_get_transcript(state: GraphState) -> dict:
         return {
             "error_message": error,
             "log": current_log + [f"❌ Erreur de transcription : {error}"],
-            "status_message": "❌ Échec de la transcription."
+            "status_message": "❌ Échec de la récupération de la transcription."
         }
     
     success_message = f"✅ Transcription récupérée ({len(transcript):,} caractères)."
     return {
         "transcript": transcript,
         "log": current_log + [success_message],
-        "status_message": "🧠 Lancement de la synthèse..."
+        # Message pour la prochaine étape
+        "status_message": "🧠 Utilisation de `summarize_text_tool` pour créer le résumé..."
     }
 
 def node_summarize(state: GraphState) -> dict:
@@ -77,23 +79,17 @@ def node_summarize(state: GraphState) -> dict:
     return {
         "summary": summary,
         "log": current_log + [success_message],
-        "status_message": "🎉 Travail terminé !"
+        # Message final avant de terminer
+        "status_message": "🎉 Finalisation..."
     }
 
-# NOUVEAU NŒUD FINAL : Il ne fait rien, mais sert de point de terminaison stable.
+# Ce nœud sert de point de terminaison propre
 def node_final_step(state: GraphState) -> dict:
     print("---NŒUD: ÉTAPE FINALE---")
-    return {
-        "summary": state.get("summary"),
-        "transcript": state.get("transcript"),
-        "error_message": state.get("error_message"),
-        "log": state.get("log"),
-        "status_message": "🎉 Travail terminé !"
-    }
+    # L'état est simplement transmis
+    return state
 
-
-
-# 3. Construction et compilation du graphe (VERSION CORRIGÉE)
+# 3. Construction et compilation du graphe (inchangé)
 workflow = StateGraph(GraphState)
 
 workflow.add_node("extract_id", node_extract_id)
@@ -101,15 +97,15 @@ workflow.add_node("get_transcript", node_get_transcript)
 workflow.add_node("summarize", node_summarize)
 workflow.add_node("final_step", node_final_step)
 
-
 workflow.set_entry_point("extract_id")
 
-def should_continue(state: GraphState) -> str:
-    """Détermine s'il faut continuer le processus ou s'arrêter à cause d'une erreur."""
+# Logique de branchement en cas d'erreur (optionnel mais recommandé)
+def should_continue(state: GraphState):
     if state.get("error_message"):
-        return "end_with_error"
-    else:
-        return "continue"
+        return "final_step" # Aller à la fin pour rapporter l'erreur
+    # La logique de branchement peut être plus complexe si nécessaire
+    # Pour l'instant, c'est une séquence linéaire
+    return True 
 
 # Arête 1 : Après l'extraction d'ID
 workflow.add_edge("extract_id", "get_transcript")

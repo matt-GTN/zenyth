@@ -1,10 +1,8 @@
 # /sophia/app.py
 import streamlit as st
-import os
 import time
 from dotenv import load_dotenv
 from agent import app
-from pytube import YouTube
 
 load_dotenv(dotenv_path=".env", override=True)
 
@@ -13,52 +11,52 @@ def run_agent_and_get_chunks(_youtube_url):
     """Lance l'agent et retourne la liste complète des chunks du stream."""
     inputs = {
         "youtube_url": _youtube_url, 
-        "log": ["▶️ Lancement de l'agent..."],
-        "status_message": "🔎 Extraction de l'ID de la vidéo..."
+        "log": [], # Le premier log sera généré par le premier noeud
+        "status_message": "🔎 Utilisation de `extract_id_tool` pour valider l'URL..."
     }
     return list(app.stream(inputs))
 
 st.set_page_config(page_title="Agent Résumé YouTube", page_icon="🤖", layout="wide")
 st.title("🤖 Agent de Résumé de Vidéos YouTube")
+st.markdown("Collez le lien d'une vidéo YouTube et laissez l'agent Sophia analyser et résumer son contenu pour vous.")
 
 youtube_url = st.text_input("Collez le lien d'une vidéo YouTube", placeholder="https://www.youtube.com/watch?v=...")
 
 if st.button("Générer le résumé"):
     if youtube_url:
-        try:
-            yt = YouTube(youtube_url)
-            col1, col2 = st.columns([1, 3])
-            with col1:
-                st.image(yt.thumbnail_url, width=200)
-            with col2:
-                st.subheader(yt.title)
-                st.caption(f"par {yt.author} | {round(yt.length / 60)} minutes")
-        except Exception as e:
-            st.warning("Impossible de récupérer les métadonnées de la vidéo. Lancement du résumé quand même...")
+        st.info(f"Lancement de l'analyse pour : {youtube_url}")
 
         chunks = run_agent_and_get_chunks(youtube_url)
         
         with st.status("L'agent Sophia travaille...", expanded=True) as status:
             last_log_state = []
+            
+            # Message initial avant la première boucle
+            status.update(label="▶️ Lancement de l'agent...")
+            time.sleep(0.5)
+            
             for chunk in chunks:
-                # Débogage optionnel : afficher les clés reçues
-                # st.write("Chunk keys:", chunk.keys())
-
                 for node_name, state_update in chunk.items():
                     if not state_update:
                         continue
+                    
+                    # Mise à jour du spinner/status
                     if "status_message" in state_update and state_update["status_message"]:
                         status.update(label=state_update["status_message"])
+                    
+                    # Affichage des logs
                     if "log" in state_update:
                         new_messages = state_update["log"][len(last_log_state):]
                         for msg in new_messages:
                             st.write(msg)
                         last_log_state = state_update["log"]
-                time.sleep(0.05)
+                
+                time.sleep(0.1)
             
+            # Message final une fois la boucle terminée
             status.update(label="🎉 Travail terminé !", state="complete", expanded=False)
 
-        # --- Partie 2 : Récupération et affichage du RÉSULTAT FINAL ---
+        # --- Partie 2 : Récupération et affichage du RÉSULTAT FINAL (VOTRE LOGIQUE RESTAURÉE) ---
         final_state = None
         # 1. Tentative standard (si future version gère __end__)
         for chunk in reversed(chunks):
@@ -77,8 +75,6 @@ if st.button("Générer le résumé"):
                         break
                 if final_state:
                     break
-
-
 
         if final_state:
             if final_state.get("error_message"):
