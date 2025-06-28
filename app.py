@@ -1,20 +1,15 @@
 # /sophia/app.py
 import streamlit as st
+import os
 import time
 from dotenv import load_dotenv
 from agent import app
 
 load_dotenv(dotenv_path=".env", override=True)
 
-@st.cache_data(show_spinner=False)
-def run_agent_and_get_chunks(_youtube_url):
-    """Lance l'agent et retourne la liste complète des chunks du stream."""
-    inputs = {
-        "youtube_url": _youtube_url, 
-        "log": [], # Le premier log sera généré par le premier noeud
-        "status_message": "🔎 Utilisation de `extract_id_tool` pour valider l'URL..."
-    }
-    return list(app.stream(inputs))
+# CETTE FONCTION EST SUPPRIMÉE, NOUS APPELERONS L'AGENT DIRECTEMENT
+# @st.cache_data(show_spinner=False)
+# def run_agent_and_get_chunks(_youtube_url): ...
 
 st.set_page_config(page_title="Agent Résumé YouTube", page_icon="🤖", layout="wide")
 st.title("🤖 Agent de Résumé de Vidéos YouTube")
@@ -26,16 +21,28 @@ if st.button("Générer le résumé"):
     if youtube_url:
         st.info(f"Lancement de l'analyse pour : {youtube_url}")
 
-        chunks = run_agent_and_get_chunks(youtube_url)
+        # PRÉPARATION DE L'AGENT
+        inputs = {
+            "youtube_url": youtube_url,
+            "log": [],
+            "status_message": "🔎 Utilisation de `extract_id_tool` pour valider l'URL..."
+        }
+        
+        # On va stocker les chunks ici au fur et à mesure
+        all_chunks = []
         
         with st.status("L'agent Sophia travaille...", expanded=True) as status:
             last_log_state = []
             
-            # Message initial avant la première boucle
             status.update(label="▶️ Lancement de l'agent...")
             time.sleep(0.5)
             
-            for chunk in chunks:
+            # BOUCLE DE STREAMING EN TEMPS RÉEL
+            # On appelle app.stream directement et on boucle sur le générateur
+            for chunk in app.stream(inputs):
+                # On stocke chaque chunk pour l'utiliser après la boucle
+                all_chunks.append(chunk)
+
                 for node_name, state_update in chunk.items():
                     if not state_update:
                         continue
@@ -44,29 +51,27 @@ if st.button("Générer le résumé"):
                     if "status_message" in state_update and state_update["status_message"]:
                         status.update(label=state_update["status_message"])
                     
-                    # Affichage des logs
+                    # Affichage des logs en temps réel
                     if "log" in state_update:
                         new_messages = state_update["log"][len(last_log_state):]
                         for msg in new_messages:
                             st.write(msg)
                         last_log_state = state_update["log"]
                 
-                time.sleep(0.1)
+                time.sleep(0.1) # Petite pause pour la fluidité
             
-            # Message final une fois la boucle terminée
             status.update(label="🎉 Travail terminé !", state="complete", expanded=False)
 
-        # --- Partie 2 : Récupération et affichage du RÉSULTAT FINAL (VOTRE LOGIQUE RESTAURÉE) ---
+        # --- Partie 2 : Récupération du RÉSULTAT FINAL ---
+        # On utilise maintenant la liste `all_chunks` que nous avons construite
         final_state = None
-        # 1. Tentative standard (si future version gère __end__)
-        for chunk in reversed(chunks):
+        for chunk in reversed(all_chunks):
             if "__end__" in chunk:
                 final_state = chunk["__end__"]
                 break
 
-        # 2. Fallback : on prend le dernier dict avec résumé ou erreur
         if not final_state:
-            for chunk in reversed(chunks):
+            for chunk in reversed(all_chunks):
                 for key, val in chunk.items():
                     if isinstance(val, dict) and (
                         "summary" in val or "transcript" in val or "error_message" in val
@@ -76,6 +81,7 @@ if st.button("Générer le résumé"):
                 if final_state:
                     break
 
+        # Affichage du résultat final
         if final_state:
             if final_state.get("error_message"):
                 st.error(f"Une erreur est survenue : {final_state['error_message']}")
