@@ -1,0 +1,25 @@
+# Ignorer les fichiers d'environnement
+.env
+.env.*
+
+# Ignorer les fichiers temporaires Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignorer les fichiers Streamlit
+.streamlit/
+
+# Caches et logs
+*.log
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Mac
+.DS_Store
