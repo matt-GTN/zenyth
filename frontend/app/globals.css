@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui" {
+  themes: pastel --default;
+  base: true;
+  styled: true;
+  utils: true;
+}

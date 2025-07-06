@@ -1,7 +1,7 @@
 # tools.py
 from langchain_core.tools import tool
-from src.video_tools import extract_video_id, get_video_transcript
-from src.summarize import summarize_text
+from .src.video_tools import extract_video_id, get_video_transcript
+from .src.summarize import summarize_text
 
 # Le décorateur @tool transforme automatiquement tes fonctions en outils LangChain
 # Il utilise les annotations de type et la docstring pour la description.

@@ -1,0 +1,16 @@
+# Dépendances du backend Sophia
+
+# API
+fastapi
+uvicorn
+
+# Langchain & IA
+langchain
+langgraph
+langchain-openai
+openai
+langsmith
+pytube
+youtube-transcript-api
+python-dotenv
+tiktoken
