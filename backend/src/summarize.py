@@ -6,9 +6,17 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import PromptTemplate
 from pydantic import SecretStr
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from typing import Optional, Tuple
+from config import Config
 
+# Récupération de la configuration LLM
+llm_config = Config.get_llm_config()
+llm = ChatOpenAI(**llm_config)
 
-def summarize_text(transcript: str, language: str = "français") -> tuple[str | None, str | None]:
+def summarize_text(transcript: str, language: str = "français") -> Tuple[Optional[str], Optional[str]]:
     """
     Génère un résumé d'un texte donné en utilisant une stratégie Map-Reduce pour les longs textes.
     """

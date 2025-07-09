@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from .agent import app as agent_graph, GraphState
+from agent import app as agent_graph, GraphState
 from dotenv import load_dotenv
 import os
 import json
@@ -27,10 +27,10 @@ class SummarizeRequest(BaseModel):
     youtube_url: str
     language: str = "english"
 
-fastapi_app = FastAPI()
+app = FastAPI()
 
 # Autorise toutes les origines pour le développement local
-fastapi_app.add_middleware(
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Autoriser toutes les origines
     allow_credentials=True,
@@ -63,7 +63,7 @@ async def stream_generator(req: SummarizeRequest):
                 yield f"data: {json.dumps(data_to_send)}\n\n"
                 await asyncio.sleep(0.01)
 
-@fastapi_app.post('/summarize')
+@app.post('/summarize')
 async def summarize(req: SummarizeRequest):
     """
     Handles the /summarize request by streaming the agent's progress.

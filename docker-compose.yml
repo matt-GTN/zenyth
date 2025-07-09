@@ -1,0 +1,32 @@
+
+services:
+  backend:
+    build: ./backend
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    networks:
+      - zenyth-network
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - zenyth-network
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+
+networks:
+  zenyth-network:
+    driver: bridge 

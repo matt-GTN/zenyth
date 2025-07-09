@@ -1,9 +1,15 @@
 # /sophia/agent.py
 from typing import TypedDict, Optional, List
 from langgraph.graph import StateGraph, END
+from langchain_core.messages import BaseMessage
+from dotenv import load_dotenv
+from tools import extract_id_tool, get_transcript_tool, summarize_text_tool
+# from config import tavily_tool, youtube_search # Commenté pour le débogage
+from langchain_openai import ChatOpenAI
+from langchain_core.pydantic_v1 import BaseModel, Field
 
-# On importe les fonctions décorées directement, elles agissent comme des outils
-from .tools import extract_id_tool, get_transcript_tool, summarize_text_tool
+# Load environment variables from .env file
+load_dotenv()
 
 # 1. Définition de l'état du graphe (corrigé)
 class GraphState(TypedDict):

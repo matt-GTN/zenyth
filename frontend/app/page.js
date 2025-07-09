@@ -26,7 +26,7 @@ export default function Home() {
     setCurrentStep("Initializing process...");
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = '/api';
       const res = await fetch(`${apiUrl}/summarize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -75,6 +75,7 @@ export default function Home() {
                 }
               } catch (e) {
                 console.error("Failed to parse JSON:", jsonString, e);
+                setError(`Failed to parse an update from the server. The content was: "${jsonString}"`);
               }
             }
           }

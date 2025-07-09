@@ -12,7 +12,7 @@ class Config:
     
     # Site Configuration
     SITE_URL: str = os.getenv("YOUR_SITE_URL", "http://localhost:8501")
-    SITE_NAME: str = os.getenv("YOUR_SITE_NAME", "Sophia Agent")
+    SITE_NAME: str = os.getenv("YOUR_SITE_NAME", "Zenyth")
     
     # Model Configuration
     MODEL_NAME: str = "deepseek/deepseek-chat-v3-0324:free"

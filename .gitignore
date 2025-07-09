@@ -30,3 +30,14 @@ yarn-error.log*
 # local env files
 .env*.local 
 .env
+
+# additional changes
+node_modules
+.next
+.env
+*.log
+
+# Fichiers de configuration IDE
+.idea/
+.vscode/
+backend/src/__pycache__/

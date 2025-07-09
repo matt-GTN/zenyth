@@ -13,7 +13,7 @@ function Footer() {
       <p className="font-bold">
         ZENYTH.
         <br />
-        <a className="font-nunito">Earning you hours since 2025</a>
+        <a className="font-nunito">Earning you hours</a>
       </p>
       <p>Copyright © {new Date().getFullYear()} - All rights reserved</p>
     </aside>
