@@ -1,4 +1,4 @@
-# /sophia/src/summarize.py
+# /zenyth/backend/src/summarize.py
 import os
 from langchain_openai import ChatOpenAI
 from langchain.schema.messages import SystemMessage, HumanMessage
@@ -16,16 +16,14 @@ from config import Config
 llm_config = Config.get_llm_config()
 llm = ChatOpenAI(**llm_config)
 
-def summarize_text(transcript: str, language: str = "français") -> Tuple[Optional[str], Optional[str]]:
+def summarize_text(transcript: str, language: str = "english") -> Tuple[Optional[str], Optional[str]]:
     """
     Génère un résumé d'un texte donné en utilisant une stratégie Map-Reduce pour les longs textes.
     """
     try:
-        # Vérification du texte d'entrée
         if not transcript or not transcript.strip():
             return None, "Le texte à résumer est vide ou ne contient que des espaces."
         
-        # Initialisation du LLM (pas de changement ici)
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
             return None, "Clé API OpenRouter manquante"
@@ -37,94 +35,103 @@ def summarize_text(transcript: str, language: str = "français") -> Tuple[Option
             temperature=0.7,
             timeout=1800, 
             default_headers={
-                "HTTP-Referer": os.getenv("YOUR_SITE_URL", "http://localhost:8501"),
-                "X-Title": os.getenv("YOUR_SITE_NAME", "Agent Resume YouTube"),
+                "HTTP-Referer": os.getenv("YOUR_SITE_URL", "http://localhost:3000"), # Note: le port par défaut de Next.js est 3000
+                "X-Title": os.getenv("YOUR_SITE_NAME", "Zenyth"),
             }
         )
 
-
-        # 1. Découper le texte en morceaux
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=15000, chunk_overlap=750)
         docs = text_splitter.create_documents([transcript])
         
-        # Si le texte est court, on n'a pas besoin de Map-Reduce
+        # --- PROMPT POUR LE TEXTE COURT (Amélioré) ---
         if len(docs) == 1:
             print("--- Texte court, résumé direct ---")
-            # Tu peux garder ton prompt simple ici si tu veux
-            prompt = f"""En tant qu'expert pédagogique, rédige un résumé détaillé et bien structuré en {language} pour la transcription suivante. 
-            Identifie les idées principales et présente-les sous forme de points clés clairs et concis.
-            Assure-toi d'inclure les informations importantes et de ne pas omettre de détails significatifs : tips, ressources, bonnées idées, ou tout autre détail de valeur. 
-            Le but est d'apprendre en utilisant ce résumé.
+            prompt_template = ChatPromptTemplate.from_template(
+                """Your task is to act as an expert educational summarizer.
+Create a detailed, well-structured summary of the following transcript.
 
-            Transcription :
-            {transcript}
+**CRITICAL INSTRUCTION: The final summary MUST be written in the following language: {language}**
 
-            Résumé structuré :"""
-            response = llm.invoke([HumanMessage(content=prompt)])
-            return str(response.content), None
+Identify the main ideas and present them as clear, concise key points.
+Ensure you include all important information and do not omit significant details: tips, resources, data, ideas, or any other valuable detail.
+The goal is to learn from this summary.
 
-        # 2. Utiliser une chaîne Map-Reduce de LangChain
+Transcript:
+---
+{transcript}
+---
+
+Structured summary in {language}:"""
+            )
+            chain = prompt_template | llm | StrOutputParser()
+            summary = chain.invoke({"transcript": transcript, "language": language})
+            return summary, None
+
+        # --- PROMPTS POUR MAP-REDUCE (Améliorés) ---
         print(f"--- Texte long, stratégie Map-Reduce sur {len(docs)} morceaux ---")
 
-        map_prompt_template = """En tant qu'expert pédagogique et assitant de rédaction, tu es chargé de résumer des parties d'une transcription.
-        Voici un morceau de la transcription. Résume-le en {language} en extrayant les points essentiels.
+        # Étape MAP : Résumer chaque morceau individuellement
+        map_prompt_template = """You are an expert assistant for summarizing parts of a longer document.
+Your goal is to summarize the following chunk of a transcript.
 
+**CRITICAL INSTRUCTION: Your summary output for this chunk MUST be in the following language: {language}**
+
+Extract the key points and essential information. Include significant details like tips, resources, or data.
+Remain strictly faithful to the provided text. DO NOT INVENT INFORMATION.
+
+Transcript chunk:
+---
+"{text}"
+---
+
+Concise summary of the chunk in {language}:"""
+        map_prompt = PromptTemplate.from_template(map_prompt_template)
+
+        # Étape COMBINE : Assembler les résumés en un seul
+        combine_prompt_template = """You are an expert content synthesizer. You are provided with several partial summaries from a long transcript.
+Your task is to combine them into a single, detailed, fluid, and coherent final summary.
+
+**CRITICAL INSTRUCTION: The final combined summary MUST be written in the following language: {language}**
+
+The final summary should be well-structured, easy to read, and cover all important topics.
+Use bullet points for key takeaways. Ensure you include all important information and significant details like tips, resources, or data.
+If the content is narrative, focus on storytelling and style while maintaining a clear structure.
+
+Partial summaries:
+---
+"{text}"
+---
+
+Detailed and structured final summary in {language}:"""
+        combine_prompt = PromptTemplate.from_template(combine_prompt_template)
         
-        Assure-toi d'inclure les informations importantes et de ne pas omettre de détails significatifs : tips, ressources, bonnées idées, ou tout autre détail de valeur. 
-        Le but est d'apprendre en utilisant ce résumé.
-        Structure le résumé de manière claire et concise, en utilisant des phrases complètes et en évitant les répétitions inutiles.
-
-        Si le sujet de la vidéo est narratif, fais plus de place à la narration et au style, tout en gardant une structure claire et fluide, en étant le plus captivant possible.
+        # Le prompt "collapse" n'a pas besoin d'être aussi complexe.
+        collapse_prompt_template = """Combine the following summaries into a single, coherent intermediate summary.
         
-        N'INVENTE JAMAIS D'INFORMATIONS, RESTE STRICTEMENT FIDÈLE AU TEXTE FOURNI.
-        Morceau de transcription :
-        "{text}"
-        
-        Résumé concis du morceau en {language} :
-        """
-        map_prompt = PromptTemplate(template=map_prompt_template, input_variables=["text", "language"])
+**CRITICAL INSTRUCTION: The output MUST be in the following language: {language}**
 
-        combine_prompt_template = """
-        Tu es un assistant expert en synthèse de contenu. Plusieurs résumés partiels d'une longue transcription te sont fournis ci-dessous.
-        Ta tâche est de les combiner en un résumé final unique, détaillé, fluide et cohérent en {language}.
-        
-        Si le sujet de la vidéo est pédagogique, le résumé final doit être bien structuré, facile à lire mais en faisant des phrases complètes, et couvrir tous les sujets importants abordés dans la vidéo.
-        N'hésite pas à utiliser des listes à puces pour les points clés.
-        Assure-toi d'inclure les informations importantes et de ne pas omettre de détails significatifs : tips, ressources, bonnées idées, ou tout autre détail de valeur. 
+Summaries to combine:
+---
+"{text}"
+---
 
-        Si le sujet de la vidéo est narratif, fais plus de place à la narration et au style, tout en gardant une structure claire et fluide, en étant le plus captivant possible.
-
-        Résumés partiels :
-        "{text}"
-        
-        Résumé final détaillé et structuré en {language} :
-        """
-        combine_prompt = PromptTemplate(template=combine_prompt_template, input_variables=["text", "language"])
-
-        # Le "collapse_prompt" est utilisé pour combiner les résumés intermédiaires
-        # si les résultats de l'étape "map" sont trop volumineux pour le "combine_prompt" final.
-        collapse_prompt_template = """Tu es un assistant expert en synthèse de contenu.
-        Plusieurs résumés partiels te sont fournis. Combine-les en un unique résumé intermédiaire cohérent en {language}.
-
-        Résumés partiels :
-        "{text}"
-        
-        Résumé combiné :
-        """
-        collapse_prompt = PromptTemplate(template=collapse_prompt_template, input_variables=["text", "language"])
+Combined summary in {language}:"""
+        collapse_prompt = PromptTemplate.from_template(collapse_prompt_template)
 
         chain = load_summarize_chain(
             llm,
             chain_type="map_reduce",
             map_prompt=map_prompt,
             combine_prompt=combine_prompt,
-            collapse_prompt=collapse_prompt, # Ajout du prompt pour l'étape de "collapse"
-            verbose=True 
+            collapse_prompt=collapse_prompt,
+            verbose=True,
+            # On s'assure que la langue est passée à chaque étape
+            token_max=4096 # Pour le modèle `combine`, Deepseek free a une limite
         )
         
-        summary = chain.invoke({"input_documents": docs, "language": language})
+        result = chain.invoke({"input_documents": docs, "language": language})
         
-        return str(summary['output_text']), None
+        return str(result['output_text']), None
 
     except Exception as e:
         return None, f"Erreur lors de la génération du résumé : {e}"

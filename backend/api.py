@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 import os
 import json
 import asyncio
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
 # Construire le chemin vers le fichier .env relatif au script actuel
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -38,14 +40,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def stream_generator(req: SummarizeRequest):
+async def stream_generator(req):
     """
     This async generator function streams the agent's progress.
     It uses `app.astream` to get real-time updates from the LangGraph agent.
     """
+    # req peut être un dict (issu de await req.json()) ou un objet Pydantic
+    youtube_url = req["youtube_url"] if isinstance(req, dict) else req.youtube_url
+    language = req["language"] if isinstance(req, dict) else req.language
     inputs: GraphState = {
-        "youtube_url": req.youtube_url,
-        "language": req.language,
+        "youtube_url": youtube_url,
+        "language": language,
         "video_id": None,
         "transcript": None,
         "summary": None,
@@ -63,10 +68,13 @@ async def stream_generator(req: SummarizeRequest):
                 yield f"data: {json.dumps(data_to_send)}\n\n"
                 await asyncio.sleep(0.01)
 
-@app.post('/summarize')
-async def summarize(req: SummarizeRequest):
+@app.api_route('/summarize', methods=["GET", "POST"])
+async def summarize(req: Request):
     """
     Handles the /summarize request by streaming the agent's progress.
     Returns a StreamingResponse that sends server-sent events (SSE) to the client.
     """
-    return StreamingResponse(stream_generator(req), media_type="text/event-stream")
+    print("Méthode reçue :", req.method)
+    if req.method == "POST":
+        return StreamingResponse(stream_generator(await req.json()), media_type="text/event-stream")
+    return JSONResponse({"error": "Method not allowed"}, status_code=405)

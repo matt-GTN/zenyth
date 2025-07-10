@@ -1,61 +1,77 @@
 # src/video_tools.py
 import os
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound, RequestBlocked
+import time
+import random
+# On importe la classe principale et la classe de config pour Webshare
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, RequestBlocked
 from youtube_transcript_api.proxies import WebshareProxyConfig
 from typing import Optional, Tuple
 
-# Configuration du proxy Webshare
+# La configuration reste la même
 WEBSHARE_PROXY_USERNAME = os.getenv("WEBSHARE_PROXY_USERNAME")
 WEBSHARE_PROXY_PASSWORD = os.getenv("WEBSHARE_PROXY_PASSWORD")
-# Pour l'offre Rotating Residential, le port HTTP 80 est recommandé
-WEBSHARE_PROXY_PORT = int(os.getenv("WEBSHARE_PROXY_PORT", "80"))
+RETRIES_WHEN_BLOCKED = 10 # WebshareProxyConfig gère ça nativement
 
-# Nombre maximal de tentatives quand YouTube bloque une IP
-RETRIES_WHEN_BLOCKED = 25
+# BROWSER_HEADERS ne sont plus nécessaires, la bibliothèque a des headers par défaut
+# et la config du proxy gère le plus important ("Connection: close")
 
+# === DÉBUT DE LA CORRECTION MAJEURE ===
 
-def _new_transcript_api() -> YouTubeTranscriptApi:
-    """Crée une instance YouTubeTranscriptApi configurée avec un proxy rotatif.
-
-    On crée une nouvelle instance à chaque appel pour forcer la rotation d'IP.
-    """
+def _get_api_client() -> YouTubeTranscriptApi:
+    """Crée une instance cliente de l'API avec la configuration du proxy."""
+    proxy_config = None
     if WEBSHARE_PROXY_USERNAME and WEBSHARE_PROXY_PASSWORD:
-        proxy_cfg = WebshareProxyConfig(
+        proxy_config = WebshareProxyConfig(
             proxy_username=WEBSHARE_PROXY_USERNAME,
             proxy_password=WEBSHARE_PROXY_PASSWORD,
-            proxy_port=WEBSHARE_PROXY_PORT,
-            retries_when_blocked=RETRIES_WHEN_BLOCKED,
+            retries_when_blocked=RETRIES_WHEN_BLOCKED
         )
-        return YouTubeTranscriptApi(proxy_config=proxy_cfg)
-    # Fallback : pas de proxy
-    return YouTubeTranscriptApi()
+    
+    # On crée une instance de la classe avec notre configuration.
+    # C'est la méthode officielle et la plus propre.
+    return YouTubeTranscriptApi(proxy_config=proxy_config)
 
+def get_video_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]:
+    """Récupère la transcription en utilisant une instance configurée de l'API."""
+    try:
+        # 1. Obtenir une instance configurée du client API.
+        # On pourrait le créer une seule fois et le réutiliser, mais en créer un nouveau 
+        # à chaque appel garantit qu'il n'y a pas d'état partagé (plus sûr).
+        api_client = _get_api_client()
+
+        # 2. Utiliser la méthode .fetch() sur l'instance.
+        # C'est la méthode moderne et recommandée par la doc.
+        transcript = api_client.fetch(video_id, languages=["fr", "en"])
+        
+        # Le format de retour de .fetch() est une liste de segments.
+        # On doit les joindre.
+        transcript_text = " ".join(segment.text for segment in transcript)
+        
+        print("Transcription récupérée avec succès !")
+        return transcript_text, None
+
+    except RequestBlocked as rb:
+        # La logique de retry est maintenant gérée en interne par la bibliothèque 
+        # grâce à `retries_when_blocked` dans WebshareProxyConfig.
+        # Si on arrive ici, c'est que toutes les tentatives ont échoué.
+        print(f"Échec de la récupération après {RETRIES_WHEN_BLOCKED} tentatives de proxy. Erreur : {rb}")
+        return None, str(rb)
+        
+    except (TranscriptsDisabled, NoTranscriptFound) as e:
+        # Gérer les cas où il n'y a tout simplement pas de transcription
+        error_message = "Les transcriptions sont désactivées." if isinstance(e, TranscriptsDisabled) else "Aucune transcription trouvée (fr/en)."
+        print(error_message)
+        return None, error_message
+        
+    except Exception as e:
+        # Capturer toutes les autres erreurs potentielles
+        print(f"Erreur inattendue : {e}")
+        return None, f"Erreur inattendue lors de la récupération de la transcription : {e}"
+
+# La fonction extract_video_id ne change pas
 def extract_video_id(youtube_url: str) -> Optional[str]:
     if "v=" in youtube_url:
         return youtube_url.split("v=")[1].split('&')[0]
     elif "youtu.be/" in youtube_url:
         return youtube_url.split("youtu.be/")[1].split('?')[0]
     return None
-
-def get_video_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]:
-    last_error: Optional[str] = None
-    for _ in range(RETRIES_WHEN_BLOCKED):
-        try:
-            api = _new_transcript_api()
-            transcript_list = api.get_transcript(video_id, languages=["fr", "en"])
-            transcript_text = " ".join(d["text"] for d in transcript_list)
-            return transcript_text, None
-        except RequestBlocked as rb:
-            last_error = str(rb)
-            # On réessaie avec une nouvelle IP
-            continue
-        except TranscriptsDisabled:
-            return None, "Les transcriptions sont désactivées pour cette vidéo."
-        except NoTranscriptFound:
-            return None, "Aucune transcription trouvée pour cette vidéo (français ou anglais)."
-        except Exception as e:
-            return None, f"Erreur inattendue lors de la récupération de la transcription : {e}"
-
-    # Si on sort de la boucle, toutes les IP ont été bloquées
-    return None, last_error or "Toutes les tentatives ont été bloquées par YouTube."

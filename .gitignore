@@ -41,3 +41,4 @@ node_modules
 .idea/
 .vscode/
 backend/src/__pycache__/
+backend/__pycache__/
