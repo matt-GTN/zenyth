@@ -53,6 +53,7 @@ async def stream_generator(req):
         "language": language,
         "video_id": None,
         "transcript": None,
+        "intermediate_summary": None,
         "summary": None,
         "error_message": None,
         "log": [],
