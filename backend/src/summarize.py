@@ -10,11 +10,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from typing import Optional, Tuple
-from config import Config
+from config import Config, get_rotating_api_key
 
 # Récupération de la configuration LLM
-llm_config = Config.get_llm_config()
-llm = ChatOpenAI(**llm_config)
+# llm_config = Config.get_llm_config()
+# llm = ChatOpenAI(**llm_config)
 
 def summarize_text(transcript: str, language: str = "english") -> Tuple[Optional[str], Optional[str]]:
     """
@@ -24,7 +24,8 @@ def summarize_text(transcript: str, language: str = "english") -> Tuple[Optional
         if not transcript or not transcript.strip():
             return None, "The text to summarize is empty or contains only spaces."
         
-        api_key = os.getenv("OPENROUTER_API_KEY")
+        # Get a new key from the rotator for every call
+        api_key = get_rotating_api_key()
         if not api_key:
             return None, "Missing OpenRouter API key"
             

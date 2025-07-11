@@ -6,6 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import SecretStr
+from config import get_rotating_api_key
 
 def translate_text(text: str, target_language: str) -> Tuple[Optional[str], Optional[str]]:
     """
@@ -22,9 +23,9 @@ def translate_text(text: str, target_language: str) -> Tuple[Optional[str], Opti
         if not text or not text.strip():
             return None, "The text to translate is empty."
 
-        api_key = os.getenv("OPENROUTER_API_KEY")
+        api_key = get_rotating_api_key()
         if not api_key:
-            return None, "Missing OpenRouter API key for translation."
+            return None, "Clé API OpenRouter manquante pour la traduction."
 
         llm = ChatOpenAI(
             model="deepseek/deepseek-chat-v3-0324:free",
