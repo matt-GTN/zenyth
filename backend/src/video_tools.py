@@ -47,26 +47,26 @@ def get_video_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]:
         # On doit les joindre.
         transcript_text = " ".join(segment.text for segment in transcript)
         
-        print("Transcription récupérée avec succès !")
+        print("Transcript successfully retrieved!")
         return transcript_text, None
 
     except RequestBlocked as rb:
         # La logique de retry est maintenant gérée en interne par la bibliothèque 
         # grâce à `retries_when_blocked` dans WebshareProxyConfig.
         # Si on arrive ici, c'est que toutes les tentatives ont échoué.
-        print(f"Échec de la récupération après {RETRIES_WHEN_BLOCKED} tentatives de proxy. Erreur : {rb}")
+        print(f"Failed to retrieve after {RETRIES_WHEN_BLOCKED} proxy attempts. Error: {rb}")
         return None, str(rb)
         
     except (TranscriptsDisabled, NoTranscriptFound) as e:
         # Gérer les cas où il n'y a tout simplement pas de transcription
-        error_message = "Les transcriptions sont désactivées." if isinstance(e, TranscriptsDisabled) else "Aucune transcription trouvée (fr/en)."
+        error_message = "Transcripts are disabled for this video. Unfortunately, we cannot zummarize that for you." if isinstance(e, TranscriptsDisabled) else "No transcript found (fr/en)."
         print(error_message)
         return None, error_message
         
     except Exception as e:
         # Capturer toutes les autres erreurs potentielles
-        print(f"Erreur inattendue : {e}")
-        return None, f"Erreur inattendue lors de la récupération de la transcription : {e}"
+        print(f"Unexpected error: {e}")
+        return None, f"Unexpected error while retrieving transcript: {e}"
 
 # La fonction extract_video_id ne change pas
 def extract_video_id(youtube_url: str) -> Optional[str]:

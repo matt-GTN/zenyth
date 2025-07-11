@@ -14,14 +14,14 @@ from fastapi.responses import JSONResponse
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=dotenv_path, override=True)
 
-# --- DEBUG: Vérifier les variables d'environnement LangSmith ---
-print("--- Vérification des variables pour LangSmith ---")
+# --- DEBUG: Check environment variables for LangSmith ---
+print("--- Checking variables for LangSmith ---")
 print(f"LANGCHAIN_TRACING_V2: {os.getenv('LANGCHAIN_TRACING_V2')}")
 api_key = os.getenv('LANGCHAIN_API_KEY')
 if api_key:
-    print(f"LANGCHAIN_API_KEY est définie (commence par: {api_key[:4]}...)")
+    print(f"LANGCHAIN_API_KEY is set (starts with: {api_key[:4]}...)")
 else:
-    print("LANGCHAIN_API_KEY n'est PAS définie.")
+    print("LANGCHAIN_API_KEY is NOT set.")
 print(f"LANGCHAIN_PROJECT: {os.getenv('LANGCHAIN_PROJECT')}")
 print("-------------------------------------------------")
 
@@ -75,7 +75,7 @@ async def summarize(req: Request):
     Handles the /summarize request by streaming the agent's progress.
     Returns a StreamingResponse that sends server-sent events (SSE) to the client.
     """
-    print("Méthode reçue :", req.method)
+    print("Received method:", req.method)
     if req.method == "POST":
         return StreamingResponse(stream_generator(await req.json()), media_type="text/event-stream")
     return JSONResponse({"error": "Method not allowed"}, status_code=405)

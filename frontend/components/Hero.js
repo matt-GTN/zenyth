@@ -8,7 +8,7 @@ function Hero() {
         <Woman width={300} height={200} />
 
         <div className="mx-auto">
-          <h1 className="animate to-purple-500 font-nunito font-bold leading-[1.05] bg-gradient-to-r from-orange-400 bg-clip-text text-transparent lg:text-3xl text-3xl max-w-2xl">
+          <h1 className="animate to-purple-500 font-nunito font-bold leading-[1.05] bg-gradient-to-r from-orange-400 bg-clip-text text-transparent text-3xl pl-5 lg:text-4xl max-w-2xl">
             Summarize Youtube Videos and save hours of your time
           </h1>
         </div>

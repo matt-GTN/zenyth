@@ -1,27 +1,23 @@
 """
-Exceptions personnalisées pour Sophia
+Custom exceptions for Sophia
 """
 
 class SophiaError(Exception):
-    """Exception de base pour Sophia"""
-    pass
-
-class VideoIDExtractionError(SophiaError):
-    """Erreur lors de l'extraction de l'ID vidéo"""
+    """Base exception for Sophia"""
     pass
 
 class TranscriptError(SophiaError):
-    """Erreur lors de la récupération de la transcription"""
+    """Error while retrieving transcript"""
     pass
 
 class SummarizationError(SophiaError):
-    """Erreur lors de la génération du résumé"""
+    """Error during summary generation"""
     pass
 
 class ConfigurationError(SophiaError):
-    """Erreur de configuration"""
+    """Configuration error"""
     pass
 
 class APIError(SophiaError):
-    """Erreur d'API externe"""
+    """External API error"""
     pass 

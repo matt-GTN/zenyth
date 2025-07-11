@@ -1,17 +1,17 @@
 """
-Configuration centralisée pour Sophia
+Configuration centralisée pour Zenyth
 """
 import os
 from typing import Optional
 
 class Config:
-    """Configuration de l'application Sophia"""
+    """Configuration de l'application Zenyth"""
     
     # API Keys
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     
     # Site Configuration
-    SITE_URL: str = os.getenv("YOUR_SITE_URL", "http://localhost:8501")
+    SITE_URL: str = os.getenv("YOUR_SITE_URL", "tryzenyth.app")
     SITE_NAME: str = os.getenv("YOUR_SITE_NAME", "Zenyth")
     
     # Model Configuration
@@ -22,13 +22,6 @@ class Config:
     # Text Processing
     CHUNK_SIZE: int = 20000
     CHUNK_OVERLAP: int = 800
-    
-    # Supported Languages for transcripts
-    SUPPORTED_LANGUAGES: list = ['fr', 'en']
-    
-    # UI Configuration
-    PAGE_TITLE: str = "Agent Résumé YouTube"
-    PAGE_ICON: str = "🤖"
     
     @classmethod
     def validate(cls) -> bool:

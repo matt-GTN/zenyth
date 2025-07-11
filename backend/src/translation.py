@@ -20,11 +20,11 @@ def translate_text(text: str, target_language: str) -> Tuple[Optional[str], Opti
     """
     try:
         if not text or not text.strip():
-            return None, "Le texte à traduire est vide."
+            return None, "The text to translate is empty."
 
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            return None, "Clé API OpenRouter manquante pour la traduction."
+            return None, "Missing OpenRouter API key for translation."
 
         llm = ChatOpenAI(
             model="deepseek/deepseek-chat-v3-0324:free",
@@ -57,4 +57,4 @@ def translate_text(text: str, target_language: str) -> Tuple[Optional[str], Opti
         return translated_text, None
 
     except Exception as e:
-        return None, f"Erreur lors de la traduction : {e}"
+        return None, f"Error during translation: {e}"

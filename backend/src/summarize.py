@@ -22,11 +22,11 @@ def summarize_text(transcript: str, language: str = "english") -> Tuple[Optional
     """
     try:
         if not transcript or not transcript.strip():
-            return None, "Le texte à résumer est vide ou ne contient que des espaces."
+            return None, "The text to summarize is empty or contains only spaces."
         
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
-            return None, "Clé API OpenRouter manquante"
+            return None, "Missing OpenRouter API key"
             
         llm = ChatOpenAI(
             model="deepseek/deepseek-chat-v3-0324:free",
@@ -134,4 +134,4 @@ Combined summary in {language}:"""
         return str(result['output_text']), None
 
     except Exception as e:
-        return None, f"Erreur lors de la génération du résumé : {e}"
+        return None, f"Error during summary generation: {e}"

@@ -27,20 +27,20 @@ class GraphState(TypedDict):
 
 # 2. Définition des nœuds
 def node_extract_id(state: GraphState) -> dict:
-    print("---NŒUD: EXTRACTION DE L'ID---")
+    print("---NODE: ID EXTRACTION---")
     current_log = state.get("log", [])
-    current_step = "Extraction de l'ID"
+    current_step = "ID Extraction"
     step_progress = state.get("step_progress", [])
     
     url = state.get('youtube_url', '')
     video_id = extract_id_tool.invoke({"youtube_url": url})
     
     if not video_id:
-        error_message = "URL YouTube invalide ou ID non trouvé."
+        error_message = "Invalid YouTube URL or ID not found."
         return {
             "error_message": error_message,
             "log": current_log + [f"❌ {error_message}"],
-            "status_message": "❌ Échec de l'extraction de l'ID.",
+            "status_message": "❌ Failed to extract ID.",
             "current_step": current_step,
             "step_progress": step_progress + [{"step": current_step, "status": "error", "message": error_message}]
         }
@@ -55,9 +55,9 @@ def node_extract_id(state: GraphState) -> dict:
     }
 
 def node_get_transcript(state: GraphState) -> dict:
-    print("---NŒUD: RÉCUPÉRATION DE LA TRANSCRIPTION---")
+    print("---NODE: TRANSCRIPT RETRIEVAL---")
     current_log = state.get("log", [])
-    current_step = "Récupération de la transcription"
+    current_step = "Transcript Retrieval"
     step_progress = state.get("step_progress", [])
     
     video_id = state.get('video_id', '')
@@ -67,7 +67,7 @@ def node_get_transcript(state: GraphState) -> dict:
         return {
             "error_message": error,
             "log": current_log + [f"❌ {error}"],
-            "status_message": f"❌ Échec: {error}",
+            "status_message": f"❌ Failed: {error}",
             "current_step": current_step,
             "step_progress": step_progress + [{"step": current_step, "status": "error", "message": error}]
         }
@@ -82,15 +82,15 @@ def node_get_transcript(state: GraphState) -> dict:
     }
 
 def node_summarize(state: GraphState) -> dict:
-    print("---NŒUD: CRÉATION DU RÉSUMÉ---")
+    print("---NODE: SUMMARY CREATION---")
     current_log = state.get("log", [])
-    current_step = "Création du résumé"
+    current_step = "Summary Creation"
     step_progress = state.get("step_progress", [])
     
     transcript = state.get('transcript', '')
     language = state.get('language', 'english')
     
-    print(f"Lancement du résumé en '{language}'...")
+    print(f"Starting summary in '{language}'...")
     summary, error = summarize_text_tool.invoke({
         "transcript": transcript,
         "language": language
@@ -100,7 +100,7 @@ def node_summarize(state: GraphState) -> dict:
         return {
             "error_message": error,
             "log": current_log + [f"❌ {error}"],
-            "status_message": f"❌ Échec de la création du résumé: {error}",
+            "status_message": f"❌ Failed to create the summary: {error}",
             "current_step": current_step,
             "step_progress": step_progress + [{"step": current_step, "status": "error", "message": error}]
         }
@@ -118,9 +118,9 @@ def node_summarize(state: GraphState) -> dict:
 
 def node_translate_summary(state: GraphState) -> dict:
     """Nœud qui assure que le résumé est dans la langue demandée (qualité)."""
-    print("---NŒUD: VÉRIFICATION DE LA LANGUE DU RÉSUMÉ---")
+    print("---NODE: SUMMARY LANGUAGE CHECK---")
     current_log = state.get("log", [])
-    current_step = "Vérification de la langue"
+    current_step = "Language Check"
     step_progress = state.get("step_progress", [])
     
     # === MODIFICATION CORRIGÉE ===
@@ -134,21 +134,21 @@ def node_translate_summary(state: GraphState) -> dict:
     })
     
     if error:
-        warning_message = f"⚠️ La vérification finale de la langue a échoué ({error}), le résumé original est utilisé."
+        warning_message = f"⚠️ Final language check failed ({error}), using the original summary."
         print(warning_message)
         # On remplit 'summary' avec la version intermédiaire en cas d'échec de la traduction
         return {
             "summary": summary_to_translate, 
             "log": current_log + [warning_message],
-            "status_message": "✅ Résumé terminé (avec un avertissement)."
+            "status_message": "✅ Summary completed (with a warning)."
         }
     
-    success_message = f"Langue du résumé :'{target_language}'."
+    success_message = f"Summary language: '{target_language}'."
     # On remplit enfin 'summary' avec le résultat final.
     return {
         "summary": final_summary, 
         "log": current_log + [success_message],
-        "status_message": "✅ Résumé terminé avec succès!",
+        "status_message": "✅ Summary successfully completed!",
         "current_step": current_step,
         "step_progress": step_progress + [{"step": current_step, "status": "success", "message": success_message}]
     }
@@ -191,6 +191,6 @@ try:
     image_bytes = graph.draw_mermaid_png()
     with open("agent_workflow.png", "wb") as f:
         f.write(image_bytes)
-    print("\nVisualisation du graphe sauvegardée dans le répertoire en tant que agent_workflow.png\n")
+    print("\nGraph visualization saved in the directory as agent_workflow.png\n")
 except Exception as e:
-    print(f"\nImpossible de générer la visualisation. Lancez 'pip install playwright' et 'playwright install'. Erreur: {e}\n")
+    print(f"\nUnable to generate visualization. Run 'pip install playwright' and 'playwright install'. Error: {e}\n")
