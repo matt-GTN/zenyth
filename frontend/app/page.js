@@ -4,6 +4,8 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import Footer from "@/components/Footer";
 import Zenyth from "@/components/svg/Zenyth";
+import Hero from "@/components/Hero";
+
 
 export default function Home() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
@@ -182,12 +184,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-base-200 flex flex-col items-center">
-      <div className="navbar bg-base-100 shadow-sm">
+      <div className="navbar bg-base-100 shadow-lg">
         <Zenyth height={70} width={200}/>
       </div>
+      <Hero />
       {/* Conteneur principal qui grandit pour pousser le footer vers le bas */}
-      <div className="flex flex-col items-center w-full min-h-screen py-8">
-        <div className="w-full max-w-3xl px-6">
+      <div className="flex flex-col items-center w-full min-h-screen pb-8">
+        <div className="w-full max-w-3xl px-12">
           <form className="flex flex-col gap-4 items-center my-12" onSubmit={handleSubmit}>
             <div className="form-control w-full">
               <label htmlFor="url-input" className="text-warning text-sm pb-1">

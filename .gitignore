@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# docker
+docker-compose.override.yml
+
 # dependencies
 /frontend/node_modules
 /.pnp
@@ -42,3 +45,4 @@ node_modules
 .vscode/
 backend/src/__pycache__/
 backend/__pycache__/
+frontend/next.config.mjs

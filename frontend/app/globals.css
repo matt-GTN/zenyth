@@ -6,3 +6,12 @@
   styled: true;
   utils: true;
 }
+
+@layer utilities {
+  .font-gloria {
+    font-family: var(--font-gloria), sans-serif;
+  }
+  .font-nunito {
+    font-family: var(--font-nunito), sans-serif;
+  }
+}

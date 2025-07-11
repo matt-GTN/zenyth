@@ -1,18 +1,16 @@
 "use client";
-
+import Woman from "@/components/svg/Woman_hero";
 function Hero() {
 
   return (
-    <div className="hero min-h-screen relative z-0 pt-20 pb-50">
-      <div className="hero-content text-neutral-content flex-col lg:flex-row md:flex-row w-full mt-20">
+    <div className="hero relative w-full max-w-4xl z-0">
+      <div className="hero-content text-neutral-content flex-col lg:flex-row md:flex-row w-full mt-10">
+        <Woman width={300} height={200} />
 
-        <div className="max-w-3xl mx-auto">
-          <h1 className="animate to-primary font-nunito font-bold leading-[1.05] mb-5 bg-gradient-to-r from-orange-400 bg-clip-text text-transparent lg:text-7xl text-3xl">
-            Find your next favorite board game
+        <div className="mx-auto">
+          <h1 className="animate to-purple-500 font-nunito font-bold leading-[1.05] bg-gradient-to-r from-orange-400 bg-clip-text text-transparent lg:text-3xl text-3xl max-w-2xl">
+            Summarize Youtube Videos and save hours of your time
           </h1>
-          <p className="mb-20 text-base-content text-xl font-bold font-nunito">
-            Get <a className="dark:text-primary light:text-secondary inline-block font-gloria animate-bounce mx-1"> A.I. </a> powered recommendations based on what you ❤️.
-          </p>
         </div>
       </div>
     </div>
