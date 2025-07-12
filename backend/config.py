@@ -1,73 +1,95 @@
+# /backend/config.py
 """
 Configuration centralisée pour Zenyth
 """
 import os
 import itertools
 import threading
-from typing import Optional, List
+from typing import Optional, List, Dict
+from pydantic import SecretStr
+from langchain_openai import ChatOpenAI
 
 class Config:
-    """Configuration de l'application Zenyth"""
+    """Classe de configuration pour l'application Zenyth."""
     
-    # API Keys
+    # --- Clés API ---
+    # Lit les clés depuis la variable d'environnement, les sépare par une virgule
     OPENROUTER_API_KEYS_STR: str = os.getenv("OPENROUTER_API_KEYS", "")
     OPENROUTER_API_KEYS: List[str] = [key.strip() for key in OPENROUTER_API_KEYS_STR.split(',') if key.strip()]
     
-    # Site Configuration
-    SITE_URL: str = os.getenv("YOUR_SITE_URL", "tryzenyth.app")
+    # --- Configuration du proxy YouTube ---
+    WEBSHARE_PROXY_USERNAME: Optional[str] = os.getenv("WEBSHARE_PROXY_USERNAME")
+    WEBSHARE_PROXY_PASSWORD: Optional[str] = os.getenv("WEBSHARE_PROXY_PASSWORD")
+    WEBSHARE_RETRIES: int = 10
+
+    # --- Configuration du Site ---
+    SITE_URL: str = os.getenv("YOUR_SITE_URL", "https://tryzenyth.app")
     SITE_NAME: str = os.getenv("YOUR_SITE_NAME", "Zenyth")
     
-    # Model Configuration
-    MODEL_NAME: str = "deepseek/deepseek-chat-v3-0324:free"
-    TEMPERATURE: float = 0.7
-    REQUEST_TIMEOUT: int = 900
-    
-    # Text Processing
-    CHUNK_SIZE: int = 20000
-    CHUNK_OVERLAP: int = 800
-    
-    @classmethod
-    def validate(cls) -> bool:
-        """Valide la configuration"""
-        # Updated validation check
-        if not cls.OPENROUTER_API_KEYS:
-            raise ValueError("OPENROUTER_API_KEYS is required in the .env file (comma-separated).")
-        return True
+    # --- Configuration du Modèle LLM par défaut ---
+    DEFAULT_MODEL_NAME: str = "deepseek/deepseek-chat-v3-0324:free"
+    DEFAULT_TEMPERATURE: float = 0.7
+    DEFAULT_TIMEOUT: int = 1800 # Augmenté pour les longs résumés
+    BASE_URL: str = "https://openrouter.ai/api/v1"
+
+    # --- Configuration du Traitement de Texte ---
+    CHUNK_SIZE: int = 15000
+    CHUNK_OVERLAP: int = 750
     
     @classmethod
-    def get_llm_config(cls, api_key: str) -> dict:
-        """Returns a configuration dictionary for the LLM, requiring a specific API key."""
+    def get_default_headers(cls) -> Dict[str, str]:
+        """Retourne les en-têtes HTTP par défaut pour les appels LLM."""
         return {
-            "model": cls.MODEL_NAME,
-            "api_key": api_key, # Use the provided key
-            "base_url": "https://openrouter.ai/api/v1",
-            "temperature": cls.TEMPERATURE,
-            "request_timeout": cls.REQUEST_TIMEOUT,
-            "default_headers": {
-                "HTTP-Referer": cls.SITE_URL,
-                "X-Title": cls.SITE_NAME,
-            }
+            "HTTP-Referer": cls.SITE_URL,
+            "X-Title": cls.SITE_NAME,
         }
 
-# 1. Check if keys are available
+# --- Logique de Rotation des Clés API (Thread-Safe) ---
+
 if not Config.OPENROUTER_API_KEYS:
     print("⚠️ WARNING: OPENROUTER_API_KEYS environment variable not set or empty. API calls will fail.")
-    key_cycle = itertools.cycle([""]) # Fails gracefully
+    # Crée un cycle avec une chaîne vide pour que l'appli ne crash pas, mais les appels échoueront avec une erreur d'auth.
+    key_cycle = itertools.cycle([""]) 
 else:
     print(f"✅ Found {len(Config.OPENROUTER_API_KEYS)} API keys. Rotation is enabled.")
-    # 2. Create an iterator that cycles through the keys endlessly
     key_cycle = itertools.cycle(Config.OPENROUTER_API_KEYS)
 
-# 3. Create a lock to make the key rotation thread-safe
 key_lock = threading.Lock()
 
 def get_rotating_api_key() -> str:
-    """
-    Safely retrieves the next API key from the cycle.
-    This function is thread-safe.
-    """
+    """Récupère de manière sûre la prochaine clé API du cycle (thread-safe)."""
     with key_lock:
-        # Get the next key from our cycling iterator
         key = next(key_cycle)
-        print(f"🔄 Using API key ending in: ...{key[-4:]}")
+        if key:
+            print(f"🔄 Using API key ending in: ...{key[-4:]}")
         return key
+
+# --- Usine de création de LLM (Nouveau & Centralisé) ---
+
+def create_llm_instance(**kwargs) -> ChatOpenAI:
+    """
+    Crée et configure une instance de ChatOpenAI.
+    C'est le point d'entrée unique pour obtenir un client LLM.
+    Les `kwargs` peuvent surcharger les paramètres par défaut (ex: temperature, timeout).
+    """
+    api_key = get_rotating_api_key()
+    if not api_key:
+        # Cette erreur est plus claire et arrêtera le processus tôt.
+        raise ValueError("No OpenRouter API key available. Check your .env file and OPENROUTER_API_KEYS variable.")
+
+    # Paramètres par défaut tirés de la classe Config
+    config = {
+        "model": Config.DEFAULT_MODEL_NAME,
+        "temperature": Config.DEFAULT_TEMPERATURE,
+        "timeout": Config.DEFAULT_TIMEOUT,
+        "base_url": Config.BASE_URL,
+        "api_key": SecretStr(api_key),
+        "default_headers": Config.get_default_headers()
+    }
+
+    # Met à jour la configuration avec les arguments fournis (kwargs)
+    # Permet de surcharger la température pour la traduction, par exemple.
+    config.update(kwargs)
+    
+    print(f"🤖  Creating LLM instance for model '{config['model']}' with temp {config['temperature']}.")
+    return ChatOpenAI(**config)

@@ -1,29 +1,30 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+import os
+from dotenv import load_dotenv
+
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+dotenv_path = os.path.join(project_root, '.env')
+load_dotenv(dotenv_path=dotenv_path, override=True)
+print(f"Attempting to load .env from: {dotenv_path}")
+
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from agent import app as agent_graph, GraphState
-from dotenv import load_dotenv
-import os
 import json
 import asyncio
-from fastapi import Request
-from fastapi.responses import JSONResponse
 
-# Construire le chemin vers le fichier .env relatif au script actuel
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(dotenv_path=dotenv_path, override=True)
 
 # --- DEBUG: Check environment variables for LangSmith ---
-print("--- Checking variables for LangSmith ---")
+print("--- Checking variables for LangSmith & OpenRouter ---")
 print(f"LANGCHAIN_TRACING_V2: {os.getenv('LANGCHAIN_TRACING_V2')}")
-api_key = os.getenv('LANGCHAIN_API_KEY')
-if api_key:
-    print(f"LANGCHAIN_API_KEY is set (starts with: {api_key[:4]}...)")
-else:
-    print("LANGCHAIN_API_KEY is NOT set.")
+langchain_api_key = os.getenv('LANGCHAIN_API_KEY')
+print(f"LANGCHAIN_API_KEY is {'SET' if langchain_api_key else 'NOT SET'}")
 print(f"LANGCHAIN_PROJECT: {os.getenv('LANGCHAIN_PROJECT')}")
+openrouter_keys = os.getenv('OPENROUTER_API_KEYS')
+print(f"OPENROUTER_API_KEYS is {'SET' if openrouter_keys else 'NOT SET'}")
 print("-------------------------------------------------")
+
 
 class SummarizeRequest(BaseModel):
     youtube_url: str
@@ -31,21 +32,16 @@ class SummarizeRequest(BaseModel):
 
 app = FastAPI()
 
-# Autorise toutes les origines pour le développement local
+# Le reste du fichier est inchangé
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Autoriser toutes les origines
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 async def stream_generator(req):
-    """
-    This async generator function streams the agent's progress.
-    It uses `app.astream` to get real-time updates from the LangGraph agent.
-    """
-    # req peut être un dict (issu de await req.json()) ou un objet Pydantic
     youtube_url = req["youtube_url"] if isinstance(req, dict) else req.youtube_url
     language = req["language"] if isinstance(req, dict) else req.language
     inputs: GraphState = {
@@ -71,11 +67,11 @@ async def stream_generator(req):
 
 @app.api_route('/summarize', methods=["GET", "POST"])
 async def summarize(req: Request):
-    """
-    Handles the /summarize request by streaming the agent's progress.
-    Returns a StreamingResponse that sends server-sent events (SSE) to the client.
-    """
     print("Received method:", req.method)
     if req.method == "POST":
-        return StreamingResponse(stream_generator(await req.json()), media_type="text/event-stream")
+        try:
+            body = await req.json()
+            return StreamingResponse(stream_generator(body), media_type="text/event-stream")
+        except json.JSONDecodeError:
+            return JSONResponse({"error": "Invalid JSON in request body"}, status_code=400)
     return JSONResponse({"error": "Method not allowed"}, status_code=405)

@@ -14,3 +14,4 @@ pytube
 youtube-transcript-api
 python-dotenv
 tiktoken
+pydantic

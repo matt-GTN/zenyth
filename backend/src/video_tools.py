@@ -1,74 +1,76 @@
-# src/video_tools.py
-import os
+# /backend/src/video_tools.py
 import time
 import random
-# On importe la classe principale et la classe de config pour Webshare
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, RequestBlocked
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, RequestBlocked, TranscriptList
 from youtube_transcript_api.proxies import WebshareProxyConfig
 from typing import Optional, Tuple
-
-# La configuration reste la même
-WEBSHARE_PROXY_USERNAME = os.getenv("WEBSHARE_PROXY_USERNAME")
-WEBSHARE_PROXY_PASSWORD = os.getenv("WEBSHARE_PROXY_PASSWORD")
-RETRIES_WHEN_BLOCKED = 10 # WebshareProxyConfig gère ça nativement
-
-# BROWSER_HEADERS ne sont plus nécessaires, la bibliothèque a des headers par défaut
-# et la config du proxy gère le plus important ("Connection: close")
-
-# === DÉBUT DE LA CORRECTION MAJEURE ===
+from config import Config
 
 def _get_api_client() -> YouTubeTranscriptApi:
     """Crée une instance cliente de l'API avec la configuration du proxy."""
     proxy_config = None
-    if WEBSHARE_PROXY_USERNAME and WEBSHARE_PROXY_PASSWORD:
+    if Config.WEBSHARE_PROXY_USERNAME and Config.WEBSHARE_PROXY_PASSWORD:
         proxy_config = WebshareProxyConfig(
-            proxy_username=WEBSHARE_PROXY_USERNAME,
-            proxy_password=WEBSHARE_PROXY_PASSWORD,
-            retries_when_blocked=RETRIES_WHEN_BLOCKED
+            proxy_username=Config.WEBSHARE_PROXY_USERNAME,
+            proxy_password=Config.WEBSHARE_PROXY_PASSWORD,
+            retries_when_blocked=Config.WEBSHARE_RETRIES
         )
-    
-    # On crée une instance de la classe avec notre configuration.
-    # C'est la méthode officielle et la plus propre.
     return YouTubeTranscriptApi(proxy_config=proxy_config)
 
 def get_video_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]:
-    """Récupère la transcription en utilisant une instance configurée de l'API."""
+    """
+    Récupère la transcription d'une vidéo.
+    Tente d'abord de trouver une transcription en français ou anglais.
+    Si non disponible, se rabat sur la première transcription trouvée.
+    
+    Retourne:
+        Tuple[Optional[str], Optional[str]]: (texte de la transcription, message d'erreur)
+    """
     try:
-        # 1. Obtenir une instance configurée du client API.
-        # On pourrait le créer une seule fois et le réutiliser, mais en créer un nouveau 
-        # à chaque appel garantit qu'il n'y a pas d'état partagé (plus sûr).
         api_client = _get_api_client()
-
-        # 2. Utiliser la méthode .fetch() sur l'instance.
-        # C'est la méthode moderne et recommandée par la doc.
-        transcript = api_client.fetch(video_id, languages=["fr", "en"])
         
-        # Le format de retour de .fetch() est une liste de segments.
-        # On doit les joindre.
-        transcript_text = " ".join(segment.text for segment in transcript)
+        transcript_list = api_client.list(video_id)
+        transcript_to_fetch = None
+        
+        try:
+            transcript_to_fetch = transcript_list.find_transcript(['fr', 'en'])
+        except NoTranscriptFound:
+            print("No transcript in preferred languages (fr, en). Falling back to the first available.")
+            try:
+                transcript_to_fetch = next(iter(transcript_list))
+            except StopIteration:
+                raise NoTranscriptFound(video_id, ['any'], transcript_list)
+
+        print(f"Fetching transcript in '{transcript_to_fetch.language_code}'...")
+        fetched_transcript = transcript_to_fetch.fetch()
+        
+        # --- CORRECTION DE LA LIGNE POSANT PROBLÈME ---
+        # On utilise segment.text au lieu de segment['text']
+        transcript_text = " ".join(segment.text for segment in fetched_transcript)
         
         print("Transcript successfully retrieved!")
         return transcript_text, None
 
     except RequestBlocked as rb:
-        # La logique de retry est maintenant gérée en interne par la bibliothèque 
-        # grâce à `retries_when_blocked` dans WebshareProxyConfig.
-        # Si on arrive ici, c'est que toutes les tentatives ont échoué.
-        print(f"Failed to retrieve after {RETRIES_WHEN_BLOCKED} proxy attempts. Error: {rb}")
-        return None, str(rb)
+        error_message = f"Failed to retrieve after {Config.WEBSHARE_RETRIES} proxy attempts. Error: {rb}"
+        print(error_message)
+        return None, error_message
         
-    except (TranscriptsDisabled, NoTranscriptFound) as e:
-        # Gérer les cas où il n'y a tout simplement pas de transcription
-        error_message = "Transcripts are disabled for this video. Unfortunately, we cannot zummarize that for you." if isinstance(e, TranscriptsDisabled) else "No transcript found (fr/en)."
+    except TranscriptsDisabled:
+        error_message = "Transcripts are disabled for this video. Unfortunately, we cannot summarize that for you."
+        print(error_message)
+        return None, error_message
+        
+    except NoTranscriptFound:
+        error_message = "No transcript could be found for this video in any language."
         print(error_message)
         return None, error_message
         
     except Exception as e:
-        # Capturer toutes les autres erreurs potentielles
+        error_message = f"Unexpected error while retrieving transcript: {e}"
         print(f"Unexpected error: {e}")
-        return None, f"Unexpected error while retrieving transcript: {e}"
+        return None, error_message
 
-# La fonction extract_video_id ne change pas
 def extract_video_id(youtube_url: str) -> Optional[str]:
     if "v=" in youtube_url:
         return youtube_url.split("v=")[1].split('&')[0]
