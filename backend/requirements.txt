@@ -1,4 +1,4 @@
-# Dépendances du backend Sophia
+# Dépendances du backend Zenyth
 
 # API
 fastapi
