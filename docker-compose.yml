@@ -1,11 +1,19 @@
 
 services:
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - zenyth-network
+
   backend:
     build: ./backend
     env_file:
       - ./.env
-    ports:
-      - "8000:8000"
     volumes:
       - ./backend:/app
     networks:
@@ -17,8 +25,6 @@ services:
   frontend:
     build:
       context: ./frontend
-    ports:
-      - "3000:3000"
     depends_on:
       - backend
     networks:
@@ -29,4 +35,4 @@ services:
 
 networks:
   zenyth-network:
-    driver: bridge 
+    driver: bridge

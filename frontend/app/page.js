@@ -10,6 +10,7 @@ import Hero from "@/components/Hero";
 export default function Home() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [language, setLanguage] = useState("english");
+  const [summaryLengthValue, setSummaryLengthValue] = useState(3);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState("");
   const [transcript, setTranscript] = useState("");
@@ -17,6 +18,14 @@ export default function Home() {
 
   const [steps, setSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState("");
+
+  const summaryLengthMap = {
+    1: "brief",
+    2: "short",
+    3: "standard",
+    4: "detailed",
+    5: "comprehensive"
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +41,11 @@ export default function Home() {
       const res = await fetch(`${apiUrl}/summarize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ youtube_url: youtubeUrl, language: language }),
+        body: JSON.stringify({
+          youtube_url: youtubeUrl,
+          language: language,
+          summary_length: summaryLengthMap[summaryLengthValue]
+        }),
       });
 
       if (!res.ok) {
@@ -206,28 +219,54 @@ export default function Home() {
                 required
               />
             </div>
-            <div className="flex w-full items-end gap-4">
-              <div className="flex flex-col">
-                <label htmlFor="language-input" className="text-warning text-sm pb-1">
-                  Language
-                </label>
-                <input
-                  id="language-input"
-                  type="text"
-                  placeholder="e.g., english"
-                  className="input input-bordered w-full"
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                />
+            <div className="collapse collapse-arrow bg-base-200 w-full">
+              <input type="checkbox" />
+              <div className="collapse-title text-md font-medium text-purple-500">
+                ⚙️ Settings
               </div>
-              <button
-                className={`btn btn-primary flex-grow`}
-                type="submit"
-                disabled={loading}
-              >
-                Generate Summary
-              </button>
+              <div className="collapse-content">
+                <div className="form-control w-full mt-4">
+                  <label htmlFor="summary-length" className="text-warning text-sm pb-1">
+                    Summary Length
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      id="summary-length"
+                      type="range"
+                      min="1"
+                      max="5"
+                      value={summaryLengthValue}
+                      onChange={(e) => setSummaryLengthValue(parseInt(e.target.value))}
+                      className="range range-sm w-full range-primary"
+                      step="1"
+                    />
+                    <code className="bg-primary px-2 py-1 rounded text-md font-nunito text-purple-500">
+                      {summaryLengthMap[summaryLengthValue]}
+                    </code>
+                  </div>
+                </div>
+                <div className="flex flex-col mt-4">
+                  <label htmlFor="language-input" className="text-warning text-sm pb-1">
+                    Language
+                  </label>
+                  <input
+                    id="language-input"
+                    type="text"
+                    placeholder="e.g., english"
+                    className="input input-bordered w-full"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
+            <button
+              className={`btn btn-primary w-full mt-4`}
+              type="submit"
+              disabled={loading}
+            >
+              Generate Summary
+            </button>
           </form>
           {error && (
             <div className="alert alert-error mt-4">{error}</div>

@@ -29,6 +29,7 @@ print("-------------------------------------------------")
 class SummarizeRequest(BaseModel):
     youtube_url: str
     language: str = "english"
+    summary_length: str = "standard"
 
 app = FastAPI()
 
@@ -44,9 +45,11 @@ app.add_middleware(
 async def stream_generator(req):
     youtube_url = req["youtube_url"] if isinstance(req, dict) else req.youtube_url
     language = req["language"] if isinstance(req, dict) else req.language
+    summary_length = req.get("summary_length", "standard") if isinstance(req, dict) else getattr(req, "summary_length", "standard")
     inputs: GraphState = {
         "youtube_url": youtube_url,
         "language": language,
+        "summary_length": summary_length,
         "video_id": None,
         "transcript": None,
         "intermediate_summary": None,

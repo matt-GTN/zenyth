@@ -15,6 +15,7 @@ load_dotenv()
 class GraphState(TypedDict):
     youtube_url: str
     language: str
+    summary_length: str
     video_id: Optional[str]
     transcript: Optional[str]
     intermediate_summary: Optional[str]  # Clé pour le résumé partiel
@@ -89,11 +90,13 @@ def node_summarize(state: GraphState) -> dict:
     
     transcript = state.get('transcript', '')
     language = state.get('language', 'english')
+    summary_length = state.get('summary_length', 'standard')
     
-    print(f"Starting summary in '{language}'...")
+    print(f"Starting {summary_length} summary in '{language}'...")
     summary, error = summarize_text_tool.invoke({
         "transcript": transcript,
-        "language": language
+        "language": language,
+        "summary_length": summary_length
     })
     
     if error:
@@ -105,13 +108,13 @@ def node_summarize(state: GraphState) -> dict:
             "step_progress": step_progress + [{"step": current_step, "status": "error", "message": error}]
         }
     
-    success_message = "Summary created."
+    success_message = f"Created {summary_length} summary."
     # === MODIFICATION CORRIGÉE ===
     # On stocke le résultat dans 'intermediate_summary' et PAS dans 'summary'
     return {
-        "intermediate_summary": summary, 
+        "intermediate_summary": summary,
         "log": current_log + [success_message],
-        "status_message": "🚀 Finalizing and formatting...",
+        "status_message": f"🚀 Finalizing {summary_length} summary...",
         "current_step": current_step,
         "step_progress": step_progress + [{"step": current_step, "status": "success", "message": success_message}]
     }

@@ -19,9 +19,9 @@ def get_transcript_tool(video_id: str) -> Tuple[Optional[str], Optional[str]]:
     return get_video_transcript(video_id)
 
 @tool
-def summarize_text_tool(transcript: str) -> Tuple[Optional[str], Optional[str]]:
-    """Prend un long texte (comme une transcription) et le résume de manière concise."""
-    return summarize_text(transcript)
+def summarize_text_tool(transcript: str, language: str = "english", summary_length: str = "standard") -> Tuple[Optional[str], Optional[str]]:
+    """Takes a long text (like a transcript) and summarizes it concisely with the specified level of detail."""
+    return summarize_text(transcript, language, summary_length)
 
 @tool
 def translate_text_tool(text: str, target_language: str) -> Tuple[Optional[str], Optional[str]]:
