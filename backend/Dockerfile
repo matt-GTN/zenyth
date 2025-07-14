@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["python", "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "600", "--timeout", "1800"]
+CMD ["python", "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "600"]
