@@ -28,14 +28,14 @@ Zenyth consists of the following components:
 graph TD
     A[User] -->|Submits YouTube URL| B[Frontend]
     B -->|API Request| C[Backend]
-    C -->|1. Extract Video ID| D[YouTube ID Extraction]
-    D -->|2. Fetch Transcript| E[Transcript Retrieval]
+    C -->|Extract Video ID| D[YouTube ID Extraction]
+    D -->|Fetch Transcript| E[Transcript Retrieval]
     E -->|Via Webshare Proxy| F[YouTube API]
     F -->|Raw Transcript| E
-    E -->|3. Process Text| G[Summarization]
+    E -->|Process Text| G[Summarization]
     G -->|Via OpenRouter| H[LLM - deepseek]
     H -->|Raw Summary| G
-    G -->|4. Translate| I[Translation]
+    G -->|Translate| I[Translation]
     I -->|Via OpenRouter| J[LLM - deepseek]
     J -->|Translated Summary| I
     I -->|Final Result| C
