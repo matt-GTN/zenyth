@@ -316,7 +316,7 @@ export default function Home() {
                   <span role="img" aria-label="Summary">📝</span> Video Summary
                 </div>
                 <div className="collapse-content">
-                  <div className="py-4 prose max-w-none break-words">
+                  <div className="py-4 prose max-w-none break-word">
                     <ReactMarkdown components={markdownComponents}>
                       {summary}
                     </ReactMarkdown>
@@ -331,7 +331,7 @@ export default function Home() {
                       <span role="img" aria-label="Transcript">📜</span> Transcript
                     </div>
                     <div className="collapse-content">
-                      <div className="py-4 prose-sm max-w-none max-h-60 overflow-y-auto break-words">
+                      <div className="py-4 prose-sm max-w-none max-h-60 overflow-y-auto break-word">
                         <ReactMarkdown components={markdownComponents}>
                           {transcript}
                         </ReactMarkdown>
