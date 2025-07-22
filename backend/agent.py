@@ -5,7 +5,6 @@ from langchain_core.messages import BaseMessage
 from dotenv import load_dotenv
 from tools import extract_id_tool, get_transcript_tool, summarize_text_tool, translate_text_tool
 # from config import tavily_tool, youtube_search # Commenté pour le débogage
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 # Load environment variables from .env file

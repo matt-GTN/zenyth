@@ -7,15 +7,17 @@ import itertools
 import threading
 from typing import Optional, List, Dict
 from pydantic import SecretStr
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 
 class Config:
     """Classe de configuration pour l'application Zenyth."""
     
     # --- Clés API ---
     # Lit les clés depuis la variable d'environnement, les sépare par une virgule
-    OPENROUTER_API_KEYS_STR: str = os.getenv("OPENROUTER_API_KEYS", "")
-    OPENROUTER_API_KEYS: List[str] = [key.strip() for key in OPENROUTER_API_KEYS_STR.split(',') if key.strip()]
+    GROQ_API_KEYS_STR: str = os.getenv("GROQ_API_KEYS", "")
+    GROQ_API_KEYS: List[str] = [key.strip() for key in GROQ_API_KEYS_STR.split(',') if key.strip()]
+    for key in GROQ_API_KEYS:
+        print(key)  # DEBUG: Affiche les clés pour vérifier la configuration
     
     # --- Configuration du proxy YouTube ---
     WEBSHARE_PROXY_USERNAME: Optional[str] = os.getenv("WEBSHARE_PROXY_USERNAME")
@@ -27,10 +29,9 @@ class Config:
     SITE_NAME: str = os.getenv("YOUR_SITE_NAME", "Zenyth")
     
     # --- Configuration du Modèle LLM par défaut ---
-    DEFAULT_MODEL_NAME: str = "deepseek/deepseek-chat-v3-0324:free"
-    DEFAULT_TEMPERATURE: float = 0.7
+    DEFAULT_MODEL_NAME: str = "compound-beta"  # Modèle Groq par défaut
+    DEFAULT_TEMPERATURE: float = 0.1
     DEFAULT_TIMEOUT: int = 1800 # Augmenté pour les longs résumés
-    BASE_URL: str = "https://openrouter.ai/api/v1"
 
     # --- Configuration du Traitement de Texte ---
     CHUNK_SIZE: int = 15000
@@ -46,13 +47,13 @@ class Config:
 
 # --- Logique de Rotation des Clés API (Thread-Safe) ---
 
-if not Config.OPENROUTER_API_KEYS:
+if not Config.GROQ_API_KEYS:
     print("⚠️ WARNING: OPENROUTER_API_KEYS environment variable not set or empty. API calls will fail.")
     # Crée un cycle avec une chaîne vide pour que l'appli ne crash pas, mais les appels échoueront avec une erreur d'auth.
     key_cycle = itertools.cycle([""]) 
 else:
-    print(f"✅ Found {len(Config.OPENROUTER_API_KEYS)} API keys. Rotation is enabled.")
-    key_cycle = itertools.cycle(Config.OPENROUTER_API_KEYS)
+    print(f"✅ Found {len(Config.GROQ_API_KEYS)} API keys. Rotation is enabled.")
+    key_cycle = itertools.cycle(Config.GROQ_API_KEYS)
 
 key_lock = threading.Lock()
 
@@ -66,9 +67,9 @@ def get_rotating_api_key() -> str:
 
 # --- Usine de création de LLM (Nouveau & Centralisé) ---
 
-def create_llm_instance(**kwargs) -> ChatOpenAI:
+def create_llm_instance(**kwargs) -> ChatGroq:
     """
-    Crée et configure une instance de ChatOpenAI.
+    Crée et configure une instance de ChatGroq.
     C'est le point d'entrée unique pour obtenir un client LLM.
     Les `kwargs` peuvent surcharger les paramètres par défaut (ex: temperature, timeout).
     """
@@ -82,9 +83,7 @@ def create_llm_instance(**kwargs) -> ChatOpenAI:
         "model": Config.DEFAULT_MODEL_NAME,
         "temperature": Config.DEFAULT_TEMPERATURE,
         "timeout": Config.DEFAULT_TIMEOUT,
-        "base_url": Config.BASE_URL,
         "api_key": SecretStr(api_key),
-        "default_headers": Config.get_default_headers()
     }
 
     # Met à jour la configuration avec les arguments fournis (kwargs)
@@ -92,4 +91,4 @@ def create_llm_instance(**kwargs) -> ChatOpenAI:
     config.update(kwargs)
     
     print(f"🤖  Creating LLM instance for model '{config['model']}' with temp {config['temperature']}.")
-    return ChatOpenAI(**config)
+    return ChatGroq(**config)

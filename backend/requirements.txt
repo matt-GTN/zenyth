@@ -7,7 +7,7 @@ uvicorn
 # Langchain & IA
 langchain
 langgraph
-langchain-openai
+langchain-groq
 openai
 langsmith
 pytube

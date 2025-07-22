@@ -108,12 +108,12 @@ export default function Home() {
   // Configuration des composants pour ReactMarkdown
   const markdownComponents = {
     h1: ({ children, ...props }) => (
-      <h1 className="text-5xl font-bold my-100 text-secondary" {...props}>
+      <h1 className="text-5xl font-bold my-100 text-warning" {...props}>
         {children}
       </h1>
     ),
     h2: ({ children, ...props }) => (
-      <h2 className="text-4xl font-bold my-8" {...props}>
+      <h2 className="text-4xl font-bold my-8 text-warning" {...props}>
         {children}
       </h2>
     ),

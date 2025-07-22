@@ -15,17 +15,6 @@ import json
 import asyncio
 
 
-# --- DEBUG: Check environment variables for LangSmith ---
-print("--- Checking variables for LangSmith & OpenRouter ---")
-print(f"LANGCHAIN_TRACING_V2: {os.getenv('LANGCHAIN_TRACING_V2')}")
-langchain_api_key = os.getenv('LANGCHAIN_API_KEY')
-print(f"LANGCHAIN_API_KEY is {'SET' if langchain_api_key else 'NOT SET'}")
-print(f"LANGCHAIN_PROJECT: {os.getenv('LANGCHAIN_PROJECT')}")
-openrouter_keys = os.getenv('OPENROUTER_API_KEYS')
-print(f"OPENROUTER_API_KEYS is {'SET' if openrouter_keys else 'NOT SET'}")
-print("-------------------------------------------------")
-
-
 class SummarizeRequest(BaseModel):
     youtube_url: str
     language: str = "english"

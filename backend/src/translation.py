@@ -2,11 +2,10 @@
 import os
 from typing import Optional, Tuple
 
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import SecretStr
-from config import get_rotating_api_key
+from config import create_llm_instance
 
 def translate_text(text: str, target_language: str) -> Tuple[Optional[str], Optional[str]]:
     """
@@ -23,21 +22,7 @@ def translate_text(text: str, target_language: str) -> Tuple[Optional[str], Opti
         if not text or not text.strip():
             return None, "The text to translate is empty."
 
-        api_key = get_rotating_api_key()
-        if not api_key:
-            return None, "Clé API OpenRouter manquante pour la traduction."
-
-        llm = ChatOpenAI(
-            model="deepseek/deepseek-chat-v3-0324:free",
-            api_key=SecretStr(api_key),
-            base_url="https://openrouter.ai/api/v1",
-            temperature=0.1,  # Basse température pour une traduction fidèle
-            timeout=300,
-            default_headers={
-                "HTTP-Referer": os.getenv("YOUR_SITE_URL", "http://localhost:3000"),
-                "X-Title": os.getenv("YOUR_SITE_NAME", "Zenyth - Translation Tool"),
-            }
-        )
+        llm = create_llm_instance()
 
         prompt = ChatPromptTemplate.from_template(
             "You are a high-quality, professional translator. "
