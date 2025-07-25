@@ -12,8 +12,8 @@ Zenyth est une application alimentée par l’IA qui extrait, transcrit, résume
 - **Interface utilisateur moderne** : UI responsive, feedback en temps réel, affichage Markdown enrichi
 - **Suivi de progression détaillé** : Affichage dynamique des étapes du workflow (extraction, transcript, résumé, traduction)
 - **Gestion avancée des erreurs** : Retour précis à chaque étape, logs détaillés
-- **Proxy rotatif Webshare** : Contournement des limitations YouTube
-- **Rotation de clés API** : Pour éviter les quotas sur les LLM
+- **Proxy rotatif Webshare** : Simulation de requêtes résidentielles
+- **Rotation de clés API** : Prise en charge de plusieurs clefs APIs simultanées
 
 ## Aperçu du workflow
 
@@ -43,7 +43,7 @@ graph TD
 - Docker & Docker Compose
 - Un nom de domaine pointant vers votre serveur
 - Un compte Webshare avec proxy résidentiel rotatif
-- Clé(s) API OpenRouter (ou Groq)
+- Clé(s) API Groq
 - Python 3.9+ (pour le développement local)
 
 ## Installation
@@ -69,7 +69,7 @@ WEBSHARE_PROXY_USERNAME=your_username
 WEBSHARE_PROXY_PASSWORD=your_password
 
 # Clés API LLM (séparées par des virgules)
-OPENROUTER_API_KEYS=key1,key2,key3
+GROQ_API_KEYS="key1,key2,key3"
 
 # Tracing LangSmith (optionnel)
 LANGCHAIN_TRACING_V2=true
