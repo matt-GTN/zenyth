@@ -16,8 +16,6 @@ class Config:
     # Lit les clés depuis la variable d'environnement, les sépare par une virgule
     GROQ_API_KEYS_STR: str = os.getenv("GROQ_API_KEYS", "")
     GROQ_API_KEYS: List[str] = [key.strip() for key in GROQ_API_KEYS_STR.split(',') if key.strip()]
-    for key in GROQ_API_KEYS:
-        print(key)  # DEBUG: Affiche les clés pour vérifier la configuration
     
     # --- Configuration du proxy YouTube ---
     WEBSHARE_PROXY_USERNAME: Optional[str] = os.getenv("WEBSHARE_PROXY_USERNAME")
@@ -29,7 +27,7 @@ class Config:
     SITE_NAME: str = os.getenv("YOUR_SITE_NAME", "Zenyth")
     
     # --- Configuration du Modèle LLM par défaut ---
-    DEFAULT_MODEL_NAME: str = "compound-beta"  # Modèle Groq par défaut
+    DEFAULT_MODEL_NAME: str = "meta-llama/llama-4-scout-17b-16e-instruct"  # Modèle Groq par défaut
     DEFAULT_TEMPERATURE: float = 0.1
     DEFAULT_TIMEOUT: int = 1800 # Augmenté pour les longs résumés
 
