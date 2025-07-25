@@ -1,252 +1,161 @@
 # Zenyth
 
-Zenyth is an AI-powered application that extracts, transcribes, summarizes, and translates YouTube video content. It provides a simple web interface where users can input a YouTube URL and receive a concise, well-structured summary of the video's content in their preferred language.
+Zenyth est une application alimentée par l’IA qui extrait, transcrit, résume et traduit le contenu de vidéos YouTube. Elle propose une interface web moderne où l’utilisateur peut saisir une URL YouTube et obtenir un résumé structuré, dans la langue et le niveau de détail de son choix.
 
 ![Workflow](agent_workflow.png)
 
-## Features
+## Fonctionnalités
 
-- **YouTube Transcript Extraction**: Automatically extracts transcripts from YouTube videos
-- **AI-Powered Summarization**: Generates concise, structured summaries of video content
-- **Multi-Language Support**: Translates summaries into various languages
-- **Proxy-Based Solution**: Uses Webshare proxy to bypass YouTube API limitations
-- **Responsive Web Interface**: Clean, user-friendly interface for submitting URLs and viewing results
+- **Extraction automatique de transcript YouTube**
+- **Résumé IA multi-niveaux** : Choix du niveau de détail (très bref à très complet)
+- **Traduction multilingue** : Résumé disponible dans n’importe quelle langue (anglais, français, espagnol, etc.)
+- **Interface utilisateur moderne** : UI responsive, feedback en temps réel, affichage Markdown enrichi
+- **Suivi de progression détaillé** : Affichage dynamique des étapes du workflow (extraction, transcript, résumé, traduction)
+- **Gestion avancée des erreurs** : Retour précis à chaque étape, logs détaillés
+- **Proxy rotatif Webshare** : Contournement des limitations YouTube
+- **Rotation de clés API** : Pour éviter les quotas sur les LLM
 
-## Architecture Overview
+## Aperçu du workflow
 
-Zenyth consists of the following components:
-
-- **Frontend**: Next.js application with a responsive UI
-- **Backend**: FastAPI server with LangChain/LangGraph for orchestrating the AI workflow
-- **AI Components**: Uses OpenRouter API to access deepseek models for summarization and translation
-- **Proxy System**: Webshare rotating residential proxy to avoid IP blocking
-- **Reverse Proxy**: Nginx for routing traffic and SSL termination
-
-### Workflow Diagram
+Zenyth s’appuie sur un workflow modulaire orchestré par LangGraph :
 
 ```mermaid
 graph TD
-    A[User] -->|Submits YouTube URL| B[Frontend]
-    B -->|API Request| C[Backend]
-    C -->|Extract Video ID| D[YouTube ID Extraction]
-    D -->|Fetch Transcript| E[Transcript Retrieval]
-    E -->|Via Webshare Proxy| F[YouTube API]
-    F -->|Raw Transcript| E
-    E -->|Process Text| G[Summarization]
-    G -->|Via OpenRouter| H[LLM - deepseek]
-    H -->|Raw Summary| G
-    G -->|Translate| I[Translation]
-    I -->|Via OpenRouter| J[LLM - deepseek]
-    J -->|Translated Summary| I
-    I -->|Final Result| C
-    C -->|Response| B
-    B -->|Display Results| A
+    A[Utilisateur] -->|URL YouTube| B[Frontend]
+    B -->|Requête API| C[Backend]
+    C -->|Extract ID| D[Extraction ID]
+    D -->|Transcript| E[Récupération Transcript]
+    E -->|Proxy Webshare| F[YouTube]
+    F -->|Transcript brut| E
+    E -->|Résumé IA| G[Résumé Map-Reduce]
+    G -->|LLM| H[deepseek/groq]
+    H -->|Résumé brut| G
+    G -->|Traduction| I[Traduction IA]
+    I -->|LLM| J[deepseek/groq]
+    J -->|Résumé traduit| I
+    I -->|Résultat final| C
+    C -->|Streaming SSE| B
+    B -->|Affichage UI| A
 ```
 
-## Prerequisites
+## Prérequis
 
 - Docker & Docker Compose
-- A domain name pointing to your server
-- A Webshare account with a "Rotating Residential Proxy" plan
-- OpenRouter API key(s)
-- Python 3.9+ (for local development)
+- Un nom de domaine pointant vers votre serveur
+- Un compte Webshare avec proxy résidentiel rotatif
+- Clé(s) API OpenRouter (ou Groq)
+- Python 3.9+ (pour le développement local)
 
 ## Installation
 
-### 1. Clone the Repository
+### 1. Cloner le dépôt
 
 ```bash
 git clone <repository-url>
 cd zenyth
 ```
 
-### 2. Configure Environment Variables
-
-Create a `.env` file in the backend directory:
+### 2. Configurer les variables d’environnement
 
 ```bash
 cp backend/.env.example backend/.env
 ```
 
-Edit the `.env` file and add your credentials:
+Remplissez le fichier `.env` :
 
 ```
-# Webshare Proxy Configuration
+# Proxy Webshare
 WEBSHARE_PROXY_USERNAME=your_username
 WEBSHARE_PROXY_PASSWORD=your_password
 
-# OpenRouter API Keys (comma-separated for rotation)
+# Clés API LLM (séparées par des virgules)
 OPENROUTER_API_KEYS=key1,key2,key3
 
-# LangSmith Tracing (optional)
+# Tracing LangSmith (optionnel)
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=your_langchain_api_key
 LANGCHAIN_PROJECT=zenyth
 
-# Site Information
+# Infos site
 YOUR_SITE_URL=https://your-domain.com
 YOUR_SITE_NAME=Zenyth
 ```
 
-### 3. Configure Nginx as Reverse Proxy
+### 3. Configurer Nginx (reverse proxy)
 
-Create a virtual host configuration in `/etc/nginx/sites-available/`:
+Voir la configuration exemple dans le README d’origine.
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com www.your-domain.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name your-domain.com www.your-domain.com;
-    
-    # SSL Configuration
-    ssl_certificate /path/to/fullchain.pem;
-    ssl_certificate_key /path/to/privkey.pem;
-    
-    # Frontend
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    
-    # Backend API
-    location /api/ {
-        proxy_pass http://localhost:8000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Enable the configuration and reload Nginx:
-
-```bash
-ln -s /etc/nginx/sites-available/your-domain.com /etc/nginx/sites-enabled/
-systemctl reload nginx
-```
-
-### 4. Launch Services
-
-Start the application using Docker Compose:
+### 4. Lancer les services
 
 ```bash
 docker compose up -d --build
 ```
 
-## Usage Guide
+## Guide d’utilisation
 
-### Accessing the Web Interface
+### Accès à l’interface web
 
-Open your browser and navigate to your domain (e.g., `https://your-domain.com`).
+Ouvrez votre navigateur sur votre domaine (ex : `https://your-domain.com`).
 
-### Submitting a YouTube URL
+### Soumettre une URL YouTube
 
-1. Paste a YouTube video URL in the input field
-2. Select your preferred language for the summary (default is English)
-3. Click "Generate Summary"
-4. Wait for the processing to complete (this may take a few moments depending on the video length)
+1. Collez l’URL d’une vidéo YouTube
+2. Choisissez la langue du résumé (ex : english, français, espagnol…)
+3. Choisissez le niveau de détail du résumé (slider : très bref à très complet)
+4. Cliquez sur « Generate Summary »
+5. Suivez la progression en temps réel (étapes, erreurs éventuelles)
+6. Consultez le résumé (formaté Markdown) et le transcript (expandable)
 
-### Understanding the Results
+### Options avancées
 
-The results will be displayed in two collapsible sections:
+- **Niveau de détail** : 5 niveaux (brief, short, standard, detailed, comprehensive)
+- **Langue** : n’importe quelle langue prise en charge par le LLM
+- **Affichage Markdown** : titres, listes, emphase, etc.
+- **Streaming SSE** : résultats affichés au fur et à mesure
+- **Logs et erreurs détaillés**
 
-- **Video Summary**: A concise, structured summary of the video content
-- **Transcript**: The full transcript of the video (expandable)
+## Développement local
 
-## Troubleshooting
-
-### Common Issues
-
-#### 502 Bad Gateway
-
-- Verify that the backend service is running (`docker compose ps`)
-- Check backend logs for errors (`docker compose logs backend`)
-
-#### RequestBlocked or IpBlocked Errors
-
-This means the proxy IP is blacklisted by YouTube.
-
-- Try increasing the number of retries in the configuration
-- Change your Webshare proxy pool
-- Contact Webshare support to obtain a "YouTube Unblocker" pool
-
-#### 407 Proxy Authentication Required
-
-- Verify your Webshare credentials in the `.env` file
-
-#### No Traffic in Webshare Dashboard
-
-- Check the proxy configuration in the code and in the `.env` file
-
-### Testing the Proxy Manually
-
-You can test the proxy configuration with this command:
-
-```bash
-docker compose exec -T backend python - << 'PY'
-import os, requests
-proxies = {
-    "http":  f"http://{os.getenv('WEBSHARE_PROXY_USERNAME')}-rotate:{os.getenv('WEBSHARE_PROXY_PASSWORD')}@p.webshare.io:80",
-    "https": f"http://{os.getenv('WEBSHARE_PROXY_USERNAME')}-rotate:{os.getenv('WEBSHARE_PROXY_PASSWORD')}@p.webshare.io:80",
-}
-r = requests.get("https://httpbin.org/ip", proxies=proxies, timeout=10)
-print(r.text)
-PY
-```
-
-## Development Guide
-
-### Local Setup
-
-1. Clone the repository
-2. Install backend dependencies:
+1. Cloner le dépôt
+2. Installer les dépendances backend :
    ```bash
    cd backend
    pip install -r requirements.txt
    ```
-3. Install frontend dependencies:
+3. Installer les dépendances frontend :
    ```bash
    cd frontend
    npm install
    ```
-4. Create and configure the `.env` file
-5. Start the backend:
+4. Créer et configurer le `.env`
+5. Lancer le backend :
    ```bash
    cd backend
    uvicorn api:app --reload
    ```
-6. Start the frontend:
+6. Lancer le frontend :
    ```bash
    cd frontend
    npm run dev
    ```
 
-### Project Structure
+## Structure du projet
 
-- `backend/`: FastAPI backend
-  - `api.py`: API endpoints
-  - `agent.py`: LangGraph workflow
-  - `tools.py`: Tool definitions
-  - `config.py`: Configuration
-  - `src/`: Core functionality
-    - `video_tools.py`: YouTube transcript extraction
-    - `summarize.py`: Text summarization
-    - `translation.py`: Text translation
-- `frontend/`: Next.js frontend
-  - `app/`: Next.js app directory
-  - `components/`: React components
-  - `public/`: Static assets
+- `backend/` : FastAPI + LangGraph
+  - `api.py` : Endpoints API
+  - `agent.py` : Workflow LangGraph (étapes, gestion erreurs, logs)
+  - `tools.py` : Outils d’extraction, résumé, traduction
+  - `config.py` : Configuration centralisée
+  - `src/` : Fonctionnalités cœur
+    - `video_tools.py` : Extraction transcript YouTube
+    - `summarize.py` : Résumé Map-Reduce multi-niveaux
+    - `translation.py` : Traduction multilingue
+- `frontend/` : Next.js
+  - `app/` : App principale
+  - `components/` : Composants React (UI, SVG, Footer, Hero)
+  - `public/` : Assets statiques
 
-## Credits
+## Crédits
 
 - [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api)
 - [Webshare](https://www.webshare.io/)
@@ -258,10 +167,10 @@ PY
 - [Nginx](https://nginx.org/)
 - [Docker](https://www.docker.com/)
 
-## License
+## Licence
 
-This project is licensed under the MIT License.
+Projet sous licence MIT.
 
 ## Contact
 
-For questions or contributions, please open an issue or contact the author.
+Pour toute question ou contribution, ouvrez une issue ou contactez l’auteur.
