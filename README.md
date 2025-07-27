@@ -28,10 +28,10 @@ graph TD
     E -->|Proxy Webshare| F[YouTube]
     F -->|Transcript brut| E
     E -->|Résumé IA| G[Résumé Map-Reduce]
-    G -->|LLM| H[deepseek/groq]
+    G -->|LLM| H[kimi-K2]
     H -->|Résumé brut| G
     G -->|Traduction| I[Traduction IA]
-    I -->|LLM| J[deepseek/groq]
+    I -->|LLM| J[kimi-K2]
     J -->|Résumé traduit| I
     I -->|Résultat final| C
     C -->|Streaming SSE| B
