@@ -28,10 +28,10 @@ graph TD
     E -->|Proxy Webshare| F[YouTube]
     F -->|Transcript brut| E
     E -->|Résumé IA| G[Résumé Map-Reduce]
-    G -->|LLM| H[kimi-K2]
+    G -->|LLM| H[OpenRouter]
     H -->|Résumé brut| G
     G -->|Traduction| I[Traduction IA]
-    I -->|LLM| J[kimi-K2]
+    I -->|LLM| J[OpenRouter]
     J -->|Résumé traduit| I
     I -->|Résultat final| C
     C -->|Streaming SSE| B
@@ -43,7 +43,7 @@ graph TD
 - Docker & Docker Compose
 - Un nom de domaine pointant vers votre serveur
 - Un compte Webshare avec proxy résidentiel rotatif
-- Clé(s) API Groq
+- Clé(s) API OpenRouter
 - Python 3.9+ (pour le développement local)
 
 ## Installation
@@ -69,7 +69,7 @@ WEBSHARE_PROXY_USERNAME=your_username
 WEBSHARE_PROXY_PASSWORD=your_password
 
 # Clés API LLM (séparées par des virgules)
-GROQ_API_KEYS="key1,key2,key3"
+OPENROUTER_API_KEYS="key1,key2,key3"
 
 # Tracing LangSmith (optionnel)
 LANGCHAIN_TRACING_V2=true

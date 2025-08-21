@@ -1,6 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # docker
+docker-compose.yml
 docker-compose.override.yml
 
 # dependencies
@@ -46,3 +47,6 @@ node_modules
 backend/src/__pycache__/
 backend/__pycache__/
 frontend/next.config.mjs
+
+# Warp AI configuration
+WARP.md
