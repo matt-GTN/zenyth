@@ -20,6 +20,8 @@ class Config:
     # --- Configuration du proxy YouTube ---
     WEBSHARE_PROXY_USERNAME: Optional[str] = os.getenv("WEBSHARE_PROXY_USERNAME")
     WEBSHARE_PROXY_PASSWORD: Optional[str] = os.getenv("WEBSHARE_PROXY_PASSWORD")
+    # Setting domain back to 'p.webshare.io' as Webshare handles country targeting via the username (e.g. username-rotate)
+    WEBSHARE_PROXY_DOMAIN_NAME: str = "p.webshare.io"
     WEBSHARE_RETRIES: int = 10
 
     # --- Configuration du Site ---
@@ -27,7 +29,7 @@ class Config:
     SITE_NAME: str = os.getenv("YOUR_SITE_NAME", "Zenyth")
     
     # --- Configuration du Modèle LLM par défaut ---
-    DEFAULT_MODEL_NAME: str = "meta-llama/llama-3.1-70b-instruct"  # Modèle OpenRouter par défaut
+    DEFAULT_MODEL_NAME: str = "google/gemini-2.5-flash-lite"  # Modèle OpenRouter par défaut
     DEFAULT_TEMPERATURE: float = 0.1
     DEFAULT_TIMEOUT: int = 1800 # Augmenté pour les longs résumés
     DEFAULT_BASE_URL: str = "https://openrouter.ai/api/v1"

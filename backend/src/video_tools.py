@@ -13,8 +13,11 @@ def _get_api_client() -> YouTubeTranscriptApi:
         proxy_config = WebshareProxyConfig(
             proxy_username=Config.WEBSHARE_PROXY_USERNAME,
             proxy_password=Config.WEBSHARE_PROXY_PASSWORD,
-            retries_when_blocked=Config.WEBSHARE_RETRIES
+            # removed filter_ip_locations
+            retries_when_blocked=Config.WEBSHARE_RETRIES,
+            domain_name=Config.WEBSHARE_PROXY_DOMAIN_NAME
         )
+
     return YouTubeTranscriptApi(proxy_config=proxy_config)
 
 def get_video_transcript(video_id: str) -> Tuple[Optional[str], Optional[str]]:
