@@ -16,3 +16,8 @@ python-dotenv
 tiktoken
 pydantic
 transformers
+# Security floors, resolved together during the image build.
+starlette>=1.10.0
+requests>=2.34.2
+urllib3>=2.8.0
+transformers>=5.24.0
