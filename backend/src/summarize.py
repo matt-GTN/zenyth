@@ -1,7 +1,7 @@
 # /zenyth/backend/src/summarize.py
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains.summarize import load_summarize_chain
-from langchain.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_classic.chains.summarize import load_summarize_chain
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 import time
 from typing import Optional, Tuple
